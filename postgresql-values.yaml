@@ -1,0 +1,2 @@
+postgresqlDatabase: peachone-dev
+existingSecret: postgresql-creds
