@@ -9,26 +9,48 @@ import (
 	"peachone/routes"
 
 	"github.com/gofiber/fiber/v2"
+	jwtware "github.com/gofiber/jwt/v3"
 )
 
-func welcome(c *fiber.Ctx) error {
-	return c.SendString("Welcome to an Awesome API")
+func setupRoutes(app *fiber.App) {
+	setupPublic(app)
+	setupPrivate(app)
+
 }
 
-func setupRoutes(app *fiber.App) {
-	// Welcome endpoint
-	app.Get("/v1", welcome)
-	// User endpoints
-	app.Post("/v1/users", routes.CreateUser)
-	app.Get("/v1/users", routes.GetUsers)
-	app.Get("/v1/users/:id", routes.GetUser)
-	app.Delete("/v1/users/:id", routes.DeleteUser)
+func setupPublic(app *fiber.App) {
+	public := app.Group("/v1/public")
 
+	// Welcome endpoint
+	public.Get("/", routes.PublicWelcome)
+
+	// User endpoints
+	public.Post("/signup", routes.Signup)
+	public.Post("/login", routes.Login)
+}
+
+func setupPrivate(app *fiber.App) {
+	private := app.Group("/v1/private")
+	SIGNING_KEY := os.Getenv("SIGNING_KEY")
+	private.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte(SIGNING_KEY),
+	}))
+
+	// Welcome endpoint
+	private.Get("/", routes.PrivateWelcome)
 }
 
 func main() {
-	database.ConnectDb()
+	// Optionally automigrate at startup
+	DB_AUTOMIGRATE := os.Getenv("DB_AUTOMIGRATE")
+	if DB_AUTOMIGRATE == "true" {
+		_, err := database.CreateDBConnection()
+		if err != nil {
+			panic(err)
+		}
+	}
 
+	// Create app
 	app := fiber.New()
 	setupRoutes(app)
 
@@ -39,6 +61,7 @@ func main() {
 		log.Printf("defaulting to port %s", PORT)
 	}
 
+	// Start server
 	log.Fatal(app.Listen(fmt.Sprintf(":%s", PORT)))
 
 }

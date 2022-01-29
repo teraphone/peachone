@@ -1,133 +1,138 @@
 package routes
 
 import (
-	"errors"
-
+	"os"
 	"peachone/database"
 	"peachone/models"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
-	// This is not the model, more like a serializer
-	ID        uint
-	FirstName string
-	LastName  string
+type SignupRequest struct {
+	Name     string
+	Email    string
+	Password string
 }
 
-func CreateResponseUser(user models.User) User {
-	return User{ID: user.ID, FirstName: user.FirstName, LastName: user.LastName}
+type LoginRequest struct {
+	Email    string
+	Password string
 }
 
-func CreateUser(c *fiber.Ctx) error {
-	var user models.User
-
-	if err := c.BodyParser(&user); err != nil {
-		return c.Status(400).JSON(err.Error())
-	}
-	// make sure fields aren't empty
-	if user.FirstName == "" || user.LastName == "" || user.Email == "" {
-		return c.Status(400).JSON("Please ensure that all fields are filled out correctly.")
+// Signup request handler
+func Signup(c *fiber.Ctx) error {
+	// get request body
+	req := new(SignupRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
 	}
 
-	database.Database.Db.Create(&user)
-	responseUser := CreateResponseUser(user)
-	return c.Status(200).JSON(responseUser)
-}
-
-func GetUsers(c *fiber.Ctx) error {
-	users := []models.User{}
-	database.Database.Db.Find(&users)
-	responseUsers := []User{}
-	for _, user := range users {
-		responseUser := CreateResponseUser(user)
-		responseUsers = append(responseUsers, responseUser)
+	// validate request body
+	if req.Name == "" || req.Email == "" || req.Password == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid signup credentials.")
 	}
 
-	return c.Status(200).JSON(responseUsers)
-}
-
-func findUser(id int, user *models.User) error {
-	database.Database.Db.Find(&user, "id = ?", id)
-	if user.ID == 0 {
-		return errors.New("user does not exist")
-	}
-	return nil
-}
-
-func GetUser(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-
-	var user models.User
-
+	// create database connection
+	db, err := database.CreateDBConnection()
 	if err != nil {
-		return c.Status(400).JSON("Please ensure that :id is an integer")
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
-	if err := findUser(id, &user); err != nil {
-		return c.Status(400).JSON(err.Error())
+	// check if email already exists in db
+	user := new(models.User)
+	query := db.Where("email = ?", req.Email).Find(user)
+	if query.RowsAffected > 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid signup credentials.")
 	}
 
-	responseUser := CreateResponseUser(user)
-
-	return c.Status(200).JSON(responseUser)
-}
-
-func UpdateUser(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-
-	var user models.User
-
+	// hash password, populate user model, save to db
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return c.Status(400).JSON("Please ensure that :id is an integer")
+		return err
 	}
 
-	err = findUser(id, &user)
+	user.Name = req.Name
+	user.Email = req.Email
+	user.Password = string(hash)
 
+	db.Create(user)
+
+	// create JWT token
+	token, expiration, err := createJWTToken(user)
 	if err != nil {
-		return c.Status(400).JSON(err.Error())
+		return err
 	}
 
-	type UpdateUser struct {
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-	}
-
-	var updateData UpdateUser
-
-	if err := c.BodyParser(&updateData); err != nil {
-		return c.Status(500).JSON(err.Error())
-	}
-
-	user.FirstName = updateData.FirstName
-	user.LastName = updateData.LastName
-
-	database.Database.Db.Save(&user)
-
-	responseUser := CreateResponseUser(user)
-
-	return c.Status(200).JSON(responseUser)
+	// return response
+	return c.JSON(fiber.Map{"token": token, "expiration": expiration, "user": user})
 
 }
 
-func DeleteUser(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
+// Login request handler
+func Login(c *fiber.Ctx) error {
+	// get request body
+	req := new(LoginRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
 
-	var user models.User
+	// validate request body
+	if req.Email == "" || req.Password == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid login credentials.")
+	}
 
+	// create database connection
+	db, err := database.CreateDBConnection()
 	if err != nil {
-		return c.Status(400).JSON("Please ensure that :id is an integer")
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
-	err = findUser(id, &user)
+	// check if email exists in db
+	user := new(models.User)
+	query := db.Where("email = ?", req.Email).Find(user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid login credentials.")
+	}
 
+	// check if password matches
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid login credentials.")
+	}
+
+	// create JWT token
+	token, expiration, err := createJWTToken(user)
 	if err != nil {
-		return c.Status(400).JSON(err.Error())
+		return err
 	}
 
-	if err = database.Database.Db.Delete(&user).Error; err != nil {
-		return c.Status(404).JSON(err.Error())
+	return c.JSON(fiber.Map{"token": token, "expiration": expiration, "user": user})
+
+}
+
+// Public Welcome handler
+func PublicWelcome(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{"success": true, "path": "public"})
+}
+
+// Private Welcome handler
+func PrivateWelcome(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{"success": true, "path": "private"})
+}
+
+func createJWTToken(user *models.User) (string, int64, error) {
+	expiration := time.Now().Add(time.Hour * 24).Unix()
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["userid"] = user.ID
+	claims["expiration"] = expiration
+	SIGNING_KEY := os.Getenv("SIGNING_KEY")
+	tokenString, err := token.SignedString([]byte(SIGNING_KEY))
+	if err != nil {
+		return "", 0, err
 	}
-	return c.Status(200).JSON("Successfully deleted User")
+
+	return tokenString, expiration, nil
 }

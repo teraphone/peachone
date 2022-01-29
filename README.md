@@ -5,7 +5,6 @@ ArtifactHub link [here](https://artifacthub.io/packages/helm/bitnami/postgresql)
 
     ```
     kubectl create secret generic postgresql-creds \
-     --from-literal=postgresql-username=david \
      --from-literal=postgresql-password=pw
     ```
     
@@ -19,7 +18,7 @@ ArtifactHub link [here](https://artifacthub.io/packages/helm/bitnami/postgresql)
 
     ```
     NAME: postgresql
-    LAST DEPLOYED: Wed Jan 26 17:59:12 2022
+    LAST DEPLOYED: Fri Jan 28 17:47:29 2022
     NAMESPACE: default
     STATUS: deployed
     REVISION: 1
@@ -59,7 +58,9 @@ For gorm to open a connection to the database it needs to know the following: ho
 const DNS = "host=127.0.0.1 user=postgres password=pw dbname=peachone-dev port=5432 sslmode=disable TimeZone=US/Pacific"
 ```
 
-These need to passed in as environment variables:
+These need to passed in as environment variables...
+
+# Environment variables
 
 ```
 export DB_HOST="127.0.0.1"
@@ -69,10 +70,11 @@ export DB_NAME="peachone-dev"
 export DB_PORT="5432"
 export DB_AUTOMIGRATE="false"
 export PORT="3000"
+export SIGNING_KEY="secret"
 ```
 
 Or they can be defined inline:
 
 ```
-DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="3000" ./peachone
+DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="3000" SIGNING_KEY="secret" ./peachone
 ```

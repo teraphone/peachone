@@ -18,7 +18,7 @@ type DbInstance struct {
 
 var Database DbInstance
 
-func ConnectDb() {
+func CreateDBConnection() (*gorm.DB, error) {
 	// get environment variables for db connection
 	DB_HOST := os.Getenv("DB_HOST")
 	DB_USER := os.Getenv("DB_USER")
@@ -27,20 +27,14 @@ func ConnectDb() {
 	DB_PORT := os.Getenv("DB_PORT")
 
 	// set up db connection string
-	DNS_fmt := "host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=US/Pacific"
-	DNS := fmt.Sprintf(DNS_fmt, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
-	fmt.Println("DNS: ", DNS)
+	connectionInfoFmt := "host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=US/Pacific"
+	connectionInfo := fmt.Sprintf(connectionInfoFmt, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
+	fmt.Println("connectionInfo: ", connectionInfo)
 
 	// open db connection
-	db, err := gorm.Open(postgres.Open(DNS), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connectionInfo), &gorm.Config{})
 	if err != nil {
-		fmt.Println(err.Error())
-		panic("Cannot connect to DB")
-	}
-
-	if err != nil {
-		log.Fatal("Failed to connect to the database! \n", err)
-		os.Exit(2)
+		return nil, err
 	}
 
 	log.Println("Connected Successfully to Database")
@@ -55,5 +49,5 @@ func ConnectDb() {
 		log.Println("Skipping Migrations")
 	}
 
-	Database.Db = db
+	return db, nil
 }
