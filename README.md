@@ -78,3 +78,74 @@ Or they can be defined inline:
 ```
 DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="3000" SIGNING_KEY="secret" ./peachone
 ```
+
+# REST API Endpoints
+
+## /v1/public
+/signup
+- POST: create an account and get private API auth token
+  
+/login
+- POST: login and get private API auth token
+
+## /v1/private (requires auth token)
+/auth
+- GET: returns a new auth token with refreshed expiration
+
+/groups
+- GET: returns list of group objects that the user has access to. each group object contains details about the group
+- POST: create new group
+
+/groups/id (must have access to group)
+- GET: returns details about the group
+- PATCH: (requires group admin) modify group properties
+- DELETE: (requires group admin) “deletes” the group… tbd
+
+/groups/id/users
+- GET: returns list of user objects that are members of the group (from GroupUsers table)
+
+/groups/id/users/id
+- GET: returns user object (from GroupUsers table)
+- DELETE: (requires group admin) removes user from group 
+- PATCH: (requires group admin) modifies user properties 
+
+/groups/id/invites
+- GET: (requires group admin) returns list of invite objects for the group (from GroupInviteCodes table)
+- POST: (requires group admin) creates an invite code to the group
+
+/groups/id/invites/id
+- GET: (requires group admin) returns the invite object with the corresponding id
+- DELETE: (requires group admin) deletes the invite
+
+/groups/id/rooms
+- GET: returns a list of room objects that the user has access to
+- POST: create a new room
+
+/groups/id/rooms/id
+- GET: (requires room access) returns details of the room
+- DELETE: (requires group admin) “deletes” the room… tbd
+- PATCH: (requires room admin) modifies room properties
+
+/groups/id/rooms/id/users (RoomUsers entries are created for all group members when room is created)
+- GET: returns list of user objects for the room (from RoomUsers table)
+
+/groups/id/rooms/id/users/id
+- GET: returns user object (from RoomUsers table)
+- PATCH: (requires room admin) update RoomUser properties
+
+## /v1/private/roomservice (interacting with voice chat server)
+/rooms
+- GET: return a list of rooms that are active
+- POST: start a room if it's inactive
+
+/rooms/id
+- GET: return list of room participants
+- PATCH: (requires room admin) room moderation (kick/mute/unmute)
+- DELETE: (requires room admin) drop all participants and terminate the room
+
+/rooms/id/join
+- GET: returns the join token for the room
+
+
+
+

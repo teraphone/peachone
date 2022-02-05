@@ -38,6 +38,9 @@ func setupPrivate(app *fiber.App) {
 
 	// Welcome endpoint
 	private.Get("/", routes.PrivateWelcome)
+
+	// Auth endpoint
+	private.Get("/auth", routes.RefreshToken)
 }
 
 func main() {
