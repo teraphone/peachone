@@ -58,7 +58,7 @@ func CreateGroup(c *fiber.Ctx) error {
 	group_user := new(models.GroupUser)
 	group_user.GroupID = group.ID
 	group_user.UserID = id
-	group_user.RoleID = models.GroupRoleMap["owner"]
+	group_user.GroupRoleID = models.GroupRoleMap["owner"]
 	db.Create(group_user)
 
 	// return response

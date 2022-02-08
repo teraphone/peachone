@@ -1,66 +1,73 @@
 package models
 
 import (
-	"gorm.io/gorm"
+	"time"
 )
 
 type Group struct {
-	gorm.Model
-	Name  string
-	Rooms []Room
-	Users []User `gorm:"many2many:group_users;"`
+	ID        uint `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Name      string
 }
 
 type Room struct {
-	gorm.Model
+	ID                uint `gorm:"primary_key"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 	Name              string
-	GroupID           uint
-	Group             Group
+	GroupID           uint // fk: Group.ID
 	Capacity          uint
-	RoomTypeID        uint
-	RoomType          RoomType
-	DeploymentZoneID  uint
-	DeploymentZone    DeploymentZone
-	DeprecationCodeID uint
-	DeprecationCode   DeprecationCode
-	Users             []User `gorm:"many2many:room_users;"`
+	RoomTypeID        uint // fk: RoomType.ID
+	DeploymentZoneID  uint // fk: DeploymentZone.ID
+	DeprecationCodeID uint // fk: DeprecationCode.ID
 }
 
 type User struct {
-	gorm.Model
-	Name       string
-	Email      string
-	Password   string `json:"-"`
-	ReferrerID *uint
-	Referrer   *User
+	ID        uint `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Name      string
+	Email     string
+	Password  string `json:"-"`
 }
 
 type GroupUser struct {
-	GroupID uint `gorm:"primary_key"`
-	UserID  uint `gorm:"primary_key"`
-	RoleID  uint
-	Role    GroupRole
+	ID          uint `gorm:"primary_key"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	GroupID     uint // fk: Group.ID
+	UserID      uint // fk: User.ID
+	GroupRoleID uint // fk: GroupRole.ID
 }
 
 type RoomUser struct {
-	RoomID  uint `gorm:"primary_key"`
-	UserID  uint `gorm:"primary_key"`
-	RoleID  uint
-	Role    RoomRole
-	CanJoin bool
-	CanSee  bool
+	ID         uint `gorm:"primary_key"`
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	RoomID     uint // fk: Room.ID
+	UserID     uint // fk: User.ID
+	RoomRoleID uint // fk: RoomRole.ID
+	CanJoin    bool
+	CanSee     bool
 }
 
 type GroupInvite struct {
+	ID             uint `gorm:"primary_key"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	ExpiresAt      time.Time
+	Code           string
+	GroupID        uint // fk: Group.ID
+	InviteStatusID uint // fk: InviteStatus.ID
+	ReferrerID     uint // fk: User.ID
+	RoomID         uint // fk: Room.ID (optional)
+}
+
+type Referral struct {
 	ID         uint `gorm:"primary_key"`
-	Code       string
-	GroupID    uint
-	Group      Group
-	Expiration int64
-	StatusID   uint
-	Status     InviteStatus
-	ReferrerID uint
-	Referrer   User
-	RoomID     uint
-	Room       Room // optional
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	UserID     uint // fk: User.ID
+	ReferrerID uint // fk: User.ID
 }

@@ -83,15 +83,58 @@ func InitDBTables(db *gorm.DB) {
 		db.Create(&models.InviteStatus{Status: "expired"})
 	}
 
-	db.SetupJoinTable(&models.Group{}, "Users", &models.GroupUser{})
-	db.SetupJoinTable(&models.Room{}, "Users", &models.RoomUser{})
-
 	db.AutoMigrate(&models.Group{})
 	db.AutoMigrate(&models.Room{})
 	db.AutoMigrate(&models.User{})
 	db.AutoMigrate(&models.GroupUser{})
 	db.AutoMigrate(&models.RoomUser{})
 	db.AutoMigrate(&models.GroupInvite{})
+	db.AutoMigrate(&models.Referral{})
+
+	// define foreign key relationships
+	sql_statements := []string{
+		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_group_id;",
+		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_room_type_id;",
+		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deployment_zone_id;",
+		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deprecation_code_id;",
+		"ALTER TABLE users DROP CONSTRAINT fk_users_referrer_id;",
+		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_id;",
+		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_user_id;",
+		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_role_id;",
+		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_room_id;",
+		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_user_id;",
+		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_room_role_id;",
+		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_group_id;",
+		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_invite_status_id;",
+		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_referrer_id;",
+		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_room_id;",
+		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_user_id;",
+		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_referrer_id;",
+
+		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_group_id FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL;",
+		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_room_type_id FOREIGN KEY (room_type_id) REFERENCES room_types(id);",
+		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_deployment_zone_id FOREIGN KEY (deployment_zone_id) REFERENCES deployment_zones(id);",
+		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_deprecation_code_id FOREIGN KEY (deprecation_code_id) REFERENCES deprecation_codes(id);",
+		"ALTER TABLE group_users ADD CONSTRAINT fk_group_users_group_id FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE;",
+		"ALTER TABLE group_users ADD CONSTRAINT fk_group_users_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;",
+		"ALTER TABLE group_users ADD CONSTRAINT fk_group_users_group_role_id FOREIGN KEY (group_role_id) REFERENCES group_roles(id);",
+		"ALTER TABLE room_users ADD CONSTRAINT fk_room_users_room_id FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE;",
+		"ALTER TABLE room_users ADD CONSTRAINT fk_room_users_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;",
+		"ALTER TABLE room_users ADD CONSTRAINT fk_room_users_room_role_id FOREIGN KEY (room_role_id) REFERENCES room_roles(id);",
+		"ALTER TABLE group_invites ADD CONSTRAINT fk_group_invites_group_id FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE;",
+		"ALTER TABLE group_invites ADD CONSTRAINT fk_group_invites_invite_status_id FOREIGN KEY (invite_status_id) REFERENCES invite_statuses(id);",
+		"ALTER TABLE group_invites ADD CONSTRAINT fk_group_invites_referrer_id FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE CASCADE;",
+		"ALTER TABLE group_invites ADD CONSTRAINT fk_group_invites_room_id FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE;",
+		"ALTER TABLE referrals ADD CONSTRAINT fk_referrals_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;",
+		"ALTER TABLE referrals ADD CONSTRAINT fk_referrals_referrer_id FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE SET NULL;",
+	}
+	// run sql statements
+	for _, sql := range sql_statements {
+		err := db.Exec(sql).Error
+		if err != nil {
+			log.Println("error:", err)
+		}
+	}
 
 }
 
@@ -124,9 +167,7 @@ func CreateDBConnection() (*gorm.DB, error) {
 		InitDBTables(db)
 	} else {
 		log.Println("Skipping Migrations")
-		// is this necessary?
-		db.SetupJoinTable(&models.Group{}, "Users", &models.GroupUser{})
-		db.SetupJoinTable(&models.Room{}, "Users", &models.RoomUser{})
+
 	}
 
 	return db, nil

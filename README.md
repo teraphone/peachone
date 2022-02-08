@@ -18,7 +18,7 @@ ArtifactHub link [here](https://artifacthub.io/packages/helm/bitnami/postgresql)
 
     ```
     NAME: postgresql
-    LAST DEPLOYED: Fri Jan 28 17:47:29 2022
+    LAST DEPLOYED: Mon Feb  7 19:24:16 2022
     NAMESPACE: default
     STATUS: deployed
     REVISION: 1
@@ -41,8 +41,6 @@ ArtifactHub link [here](https://artifacthub.io/packages/helm/bitnami/postgresql)
     To connect to your database run the following command:
 
         kubectl run postgresql-client --rm --tty -i --restart='Never' --namespace default --image docker.io/bitnami/postgresql:11.14.0-debian-10-r28 --env="PGPASSWORD=$POSTGRES_PASSWORD" --command -- psql --host postgresql -U postgres -d peachone-dev -p 5432
-
-
 
     To connect to your database from outside the cluster execute the following commands:
 

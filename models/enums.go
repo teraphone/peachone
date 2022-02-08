@@ -1,9 +1,5 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 var RoomTypeMap = map[string]uint{
 	"public":  1,
 	"private": 2,
@@ -11,7 +7,7 @@ var RoomTypeMap = map[string]uint{
 }
 
 type RoomType struct {
-	gorm.Model
+	ID   uint
 	Type string // must initialize: "public", "private", "secret"
 }
 
@@ -20,7 +16,7 @@ var DeploymentZoneMap = map[string]uint{
 }
 
 type DeploymentZone struct {
-	gorm.Model
+	ID   uint
 	Zone string // must initialize: "us-west1-b"
 }
 
@@ -30,7 +26,7 @@ var DeprecationCodeMap = map[string]uint{
 }
 
 type DeprecationCode struct {
-	gorm.Model
+	ID   uint
 	Code string // must initialize: "active", "inactive"
 }
 
@@ -44,7 +40,7 @@ var RoomRoleMap = map[string]uint{
 }
 
 type RoomRole struct {
-	gorm.Model
+	ID   uint
 	Role string // must initialize: "base", "moderator", "admin", "owner", "guest", "banned"
 }
 
@@ -58,7 +54,7 @@ var GroupRoleMap = map[string]uint{
 }
 
 type GroupRole struct {
-	gorm.Model
+	ID   uint
 	Role string // must initialize: "base", "moderator", "admin", "owner", "guest", "banned"
 }
 
@@ -69,6 +65,6 @@ var InviteStatusMap = map[string]uint{
 }
 
 type InviteStatus struct {
-	gorm.Model
+	ID     uint
 	Status string // must initialize: "pending", "accepted", "expired"
 }
