@@ -12,11 +12,88 @@ import (
 	"peachone/models"
 )
 
-type DbInstance struct {
-	Db *gorm.DB
-}
+func InitDBTables(db *gorm.DB) {
 
-var Database DbInstance
+	// check if db has room_type table, create and populate if not
+	if !db.Migrator().HasTable(&models.RoomType{}) {
+		// create room_type table
+		db.Migrator().CreateTable(&models.RoomType{})
+
+		// add room types
+		db.Create(&models.RoomType{Type: "public"})
+		db.Create(&models.RoomType{Type: "private"})
+		db.Create(&models.RoomType{Type: "secret"})
+	}
+
+	// check if db has deployment_zone table, create and populate if not
+	if !db.Migrator().HasTable(&models.DeploymentZone{}) {
+		// create deployment_zone table
+		db.Migrator().CreateTable(&models.DeploymentZone{})
+
+		// add deployment zones
+		db.Create(&models.DeploymentZone{Zone: "us-west1-b"})
+	}
+
+	// check if db has deprecation_code table, create and populate if not
+	if !db.Migrator().HasTable(&models.DeprecationCode{}) {
+		// create deprecation_code table
+		db.Migrator().CreateTable(&models.DeprecationCode{})
+
+		// add deprecation codes
+		db.Create(&models.DeprecationCode{Code: "active"})
+		db.Create(&models.DeprecationCode{Code: "inactive"})
+	}
+
+	// check if db has room_role table, create and populate if not
+	if !db.Migrator().HasTable(&models.RoomRole{}) {
+		// create room_role table
+		db.Migrator().CreateTable(&models.RoomRole{})
+
+		// add room roles
+		db.Create(&models.RoomRole{Role: "base"})
+		db.Create(&models.RoomRole{Role: "moderator"})
+		db.Create(&models.RoomRole{Role: "admin"})
+		db.Create(&models.RoomRole{Role: "owner"})
+		db.Create(&models.RoomRole{Role: "guest"})
+		db.Create(&models.RoomRole{Role: "banned"})
+	}
+
+	// check if db has group_role table, create and populate if not
+	if !db.Migrator().HasTable(&models.GroupRole{}) {
+		// create group_role table
+		db.Migrator().CreateTable(&models.GroupRole{})
+
+		// add group roles
+		db.Create(&models.GroupRole{Role: "base"})
+		db.Create(&models.GroupRole{Role: "moderator"})
+		db.Create(&models.GroupRole{Role: "admin"})
+		db.Create(&models.GroupRole{Role: "owner"})
+		db.Create(&models.GroupRole{Role: "guest"})
+		db.Create(&models.GroupRole{Role: "banned"})
+	}
+
+	// check if db has invite_status table, create and populate if not
+	if !db.Migrator().HasTable(&models.InviteStatus{}) {
+		// create invite_status table
+		db.Migrator().CreateTable(&models.InviteStatus{})
+
+		// add invite statuses
+		db.Create(&models.InviteStatus{Status: "pending"})
+		db.Create(&models.InviteStatus{Status: "accepted"})
+		db.Create(&models.InviteStatus{Status: "expired"})
+	}
+
+	db.SetupJoinTable(&models.Group{}, "Users", &models.GroupUser{})
+	db.SetupJoinTable(&models.Room{}, "Users", &models.RoomUser{})
+
+	db.AutoMigrate(&models.Group{})
+	db.AutoMigrate(&models.Room{})
+	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.GroupUser{})
+	db.AutoMigrate(&models.RoomUser{})
+	db.AutoMigrate(&models.GroupInvite{})
+
+}
 
 func CreateDBConnection() (*gorm.DB, error) {
 	// get environment variables for db connection
@@ -44,9 +121,12 @@ func CreateDBConnection() (*gorm.DB, error) {
 	DB_AUTOMIGRATE := os.Getenv("DB_AUTOMIGRATE")
 	if DB_AUTOMIGRATE == "true" {
 		log.Println("Running Migrations")
-		db.AutoMigrate(new(models.User))
+		InitDBTables(db)
 	} else {
 		log.Println("Skipping Migrations")
+		// is this necessary?
+		db.SetupJoinTable(&models.Group{}, "Users", &models.GroupUser{})
+		db.SetupJoinTable(&models.Room{}, "Users", &models.RoomUser{})
 	}
 
 	return db, nil

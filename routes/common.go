@@ -5,6 +5,7 @@ import (
 	"peachone/models"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -17,6 +18,17 @@ type SignupRequest struct {
 type LoginRequest struct {
 	Email    string
 	Password string
+}
+
+type CreateGroupRequest struct {
+	Name string
+}
+
+func getIDFromJWT(c *fiber.Ctx) (uint, error) {
+	token := c.Locals("user").(*jwt.Token)
+	claims := token.Claims.(jwt.MapClaims)
+	id := uint(claims["id"].(float64))
+	return id, nil
 }
 
 func createJWTToken(user *models.User) (string, int64, error) {

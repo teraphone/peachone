@@ -128,6 +128,7 @@ DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" D
 
 /groups/id/rooms/id/users (RoomUsers entries are created for all group members when room is created)
 - GET: returns list of user objects for the room (from RoomUsers table)
+- POST: (requires room admin) adds user to room
 
 /groups/id/rooms/id/users/id
 - GET: returns user object (from RoomUsers table)
@@ -145,7 +146,3 @@ DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" D
 
 /rooms/id/join
 - GET: returns the join token for the room
-
-
-
-
