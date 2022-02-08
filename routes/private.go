@@ -29,7 +29,42 @@ func RefreshToken(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"token": fresh_token, "expiration": expiration})
 }
 
+// -----------------------------------------------------------------------------
 // Create a new group
+// -----------------------------------------------------------------------------
+type CreateGroupRequest struct {
+	Name string
+}
+
+type CreateGroupResponse struct {
+	Success   bool             `json:"success"`
+	Group     models.Group     `json:"group"`
+	GroupUser models.GroupUser `json:"group_user"`
+}
+
+func _CreateGroup(userid uint, group_name string) (*CreateGroupResponse, error) {
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	group := &models.Group{Name: group_name}
+	db.Create(group)
+	group_user := &models.GroupUser{
+		GroupID:     group.ID,
+		UserID:      userid,
+		GroupRoleID: models.GroupRoleMap["owner"],
+	}
+	db.Create(group_user)
+
+	return &CreateGroupResponse{
+		Success:   true,
+		Group:     *group,
+		GroupUser: *group_user,
+	}, nil
+}
+
 func CreateGroup(c *fiber.Ctx) error {
 	// get request body
 	req := new(CreateGroupRequest)
@@ -45,24 +80,13 @@ func CreateGroup(c *fiber.Ctx) error {
 	// extract user id from JWT claims
 	id, _ := getIDFromJWT(c)
 
-	// create database connection
-	db, err := database.CreateDBConnection()
+	// create group and group user db entries
+	response, err := _CreateGroup(id, req.Name)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating group.")
 	}
 
-	// create group and group user db entries
-	group := new(models.Group)
-	group.Name = req.Name
-	db.Create(group)
-	group_user := new(models.GroupUser)
-	group_user.GroupID = group.ID
-	group_user.UserID = id
-	group_user.GroupRoleID = models.GroupRoleMap["owner"]
-	db.Create(group_user)
-
 	// return response
-	return c.JSON(fiber.Map{"success": true, "group": group, "group_user": group_user})
+	return c.JSON(response)
 
-	// TODO: this response is pretty ugly. probably need to simplify models.
 }

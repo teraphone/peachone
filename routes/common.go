@@ -9,21 +9,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-type SignupRequest struct {
-	Name     string
-	Email    string
-	Password string
-}
-
-type LoginRequest struct {
-	Email    string
-	Password string
-}
-
-type CreateGroupRequest struct {
-	Name string
-}
-
 func getIDFromJWT(c *fiber.Ctx) (uint, error) {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)

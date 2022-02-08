@@ -8,7 +8,27 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Public Welcome handler
+func PublicWelcome(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{"success": true, "path": "public"})
+}
+
+// --------------------------------------------------------------------------------
 // Signup request handler
+// --------------------------------------------------------------------------------
+type SignupRequest struct {
+	Name     string
+	Email    string
+	Password string
+}
+
+type SignupResponse struct {
+	Success    bool        `json:"success"`
+	Token      string      `json:"token"`
+	Expiration int64       `json:"expiration"`
+	User       models.User `json:"user"`
+}
+
 func Signup(c *fiber.Ctx) error {
 	// get request body
 	req := new(SignupRequest)
@@ -53,11 +73,31 @@ func Signup(c *fiber.Ctx) error {
 	}
 
 	// return response
-	return c.JSON(fiber.Map{"token": token, "expiration": expiration, "user": user})
+	response := &SignupResponse{
+		Success:    true,
+		Token:      token,
+		Expiration: expiration,
+		User:       *user,
+	}
+	return c.JSON(response)
 
 }
 
+// --------------------------------------------------------------------------------
 // Login request handler
+// --------------------------------------------------------------------------------
+type LoginRequest struct {
+	Email    string
+	Password string
+}
+
+type LoginResponse struct {
+	Success    bool        `json:"success"`
+	Token      string      `json:"token"`
+	Expiration int64       `json:"expiration"`
+	User       models.User `json:"user"`
+}
+
 func Login(c *fiber.Ctx) error {
 	// get request body
 	req := new(LoginRequest)
@@ -94,11 +134,13 @@ func Login(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(fiber.Map{"token": token, "expiration": expiration, "user": user})
+	// return response
+	response := &LoginResponse{
+		Success:    true,
+		Token:      token,
+		Expiration: expiration,
+		User:       *user,
+	}
+	return c.JSON(response)
 
-}
-
-// Public Welcome handler
-func PublicWelcome(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{"success": true, "path": "public"})
 }
