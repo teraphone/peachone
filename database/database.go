@@ -111,7 +111,7 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_user_id;",
 		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_referrer_id;",
 
-		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_group_id FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL;",
+		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_group_id FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE;",
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_room_type_id FOREIGN KEY (room_type_id) REFERENCES room_types(id);",
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_deployment_zone_id FOREIGN KEY (deployment_zone_id) REFERENCES deployment_zones(id);",
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_deprecation_code_id FOREIGN KEY (deprecation_code_id) REFERENCES deprecation_codes(id);",
