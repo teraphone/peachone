@@ -5,69 +5,69 @@ import (
 )
 
 type Group struct {
-	ID        uint `gorm:"primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Name      string
+	ID        uint      `gorm:"primary_key" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
 }
 
 type Room struct {
-	ID                uint `gorm:"primary_key"`
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
-	Name              string
-	GroupID           uint // fk: Group.ID
-	Capacity          uint
-	RoomTypeID        uint // fk: RoomType.ID
-	DeploymentZoneID  uint // fk: DeploymentZone.ID
-	DeprecationCodeID uint // fk: DeprecationCode.ID
+	ID                uint      `gorm:"primary_key" json:"id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	Name              string    `json:"name"`
+	GroupID           uint      `json:"group_id"` // fk: Group.ID
+	Capacity          uint      `json:"capacity"`
+	RoomTypeID        uint      `json:"room_type_id"`        // fk: RoomType.ID
+	DeploymentZoneID  uint      `json:"deployment_zone_id"`  // fk: DeploymentZone.ID
+	DeprecationCodeID uint      `json:"deprecation_code_id"` // fk: DeprecationCode.ID
 }
 
 type User struct {
-	ID        uint `gorm:"primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Name      string
-	Email     string
-	Password  string `json:"-"`
+	ID        uint      `gorm:"primary_key" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Password  string    `json:"-"`
 }
 
 type GroupUser struct {
-	ID          uint `gorm:"primary_key"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	GroupID     uint // fk: Group.ID
-	UserID      uint // fk: User.ID
-	GroupRoleID uint // fk: GroupRole.ID
+	ID          uint      `gorm:"primary_key" json:"id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	GroupID     uint      `json:"group_id"`      // fk: Group.ID
+	UserID      uint      `json:"user_id"`       // fk: User.ID
+	GroupRoleID uint      `json:"group_role_id"` // fk: GroupRole.ID
 }
 
 type RoomUser struct {
-	ID         uint `gorm:"primary_key"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	RoomID     uint // fk: Room.ID
-	UserID     uint // fk: User.ID
-	RoomRoleID uint // fk: RoomRole.ID
-	CanJoin    bool
-	CanSee     bool
+	ID         uint      `gorm:"primary_key" json:"id"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	RoomID     uint      `json:"room_id"`      // fk: Room.ID
+	UserID     uint      `json:"user_id"`      // fk: User.ID
+	RoomRoleID uint      `json:"room_role_id"` // fk: RoomRole.ID
+	CanJoin    bool      `json:"can_join"`
+	CanSee     bool      `json:"can_see"`
 }
 
 type GroupInvite struct {
-	ID             uint `gorm:"primary_key"`
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	ExpiresAt      time.Time
-	Code           string
-	GroupID        uint // fk: Group.ID
-	InviteStatusID uint // fk: InviteStatus.ID
-	ReferrerID     uint // fk: User.ID
-	RoomID         uint // fk: Room.ID (optional)
+	ID             uint      `gorm:"primary_key" json:"id"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	ExpiresAt      time.Time `json:"expires_at"`
+	Code           string    `json:"code"`
+	GroupID        uint      `json:"group_id"`         // fk: Group.ID
+	InviteStatusID uint      `json:"invite_status_id"` // fk: InviteStatus.ID
+	ReferrerID     uint      `json:"referrer_id"`      // fk: User.ID
+	RoomID         uint      `json:"room_id"`          // fk: Room.ID (optional)
 }
 
 type Referral struct {
-	ID         uint `gorm:"primary_key"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	UserID     uint // fk: User.ID
-	ReferrerID uint // fk: User.ID
+	ID         uint      `gorm:"primary_key" json:"id"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	UserID     uint      `json:"user_id"`     // fk: User.ID
+	ReferrerID uint      `json:"referrer_id"` // fk: User.ID
 }
