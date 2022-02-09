@@ -43,29 +43,6 @@ type CreateGroupResponse struct {
 	GroupUser models.GroupUser `json:"group_user"`
 }
 
-func _CreateGroup(userid uint, group_name string) (*CreateGroupResponse, error) {
-	// create database connection
-	db, err := database.CreateDBConnection()
-	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
-	}
-
-	group := &models.Group{Name: group_name}
-	db.Create(group)
-	group_user := &models.GroupUser{
-		GroupID:     group.ID,
-		UserID:      userid,
-		GroupRoleID: models.GroupRoleMap["owner"],
-	}
-	db.Create(group_user)
-
-	return &CreateGroupResponse{
-		Success:   true,
-		Group:     *group,
-		GroupUser: *group_user,
-	}, nil
-}
-
 func CreateGroup(c *fiber.Ctx) error {
 	// get request body
 	req := new(CreateGroupRequest)
@@ -81,15 +58,29 @@ func CreateGroup(c *fiber.Ctx) error {
 	// extract user id from JWT claims
 	id, _ := getIDFromJWT(c)
 
-	// create group and group user db entries
-	response, err := _CreateGroup(id, req.Name)
+	// create database connection
+	db, err := database.CreateDBConnection()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error creating group.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
-	// return response
-	return c.JSON(response)
+	// create group
+	group := &models.Group{Name: req.Name}
+	db.Create(group)
+	group_user := &models.GroupUser{
+		GroupID:     group.ID,
+		UserID:      id,
+		GroupRoleID: models.GroupRoleMap["owner"],
+	}
+	db.Create(group_user)
 
+	// return response
+	response := &CreateGroupResponse{
+		Success:   true,
+		Group:     *group,
+		GroupUser: *group_user,
+	}
+	return c.JSON(response)
 }
 
 // -----------------------------------------------------------------------------
