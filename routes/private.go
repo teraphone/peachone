@@ -371,3 +371,77 @@ func CreateGroupUser(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
+
+// -----------------------------------------------------------------------------
+// Get group users
+// -----------------------------------------------------------------------------
+type GroupUserInfo struct {
+	models.GroupUser
+	Name string `json:"name"`
+}
+
+type GetGroupUsersResponse struct {
+	Success    bool            `json:"success"`
+	GroupUsers []GroupUserInfo `json:"group_users"`
+}
+
+func GetGroupUsers(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify group_user has access to group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// get group users
+	group_users := []models.GroupUser{}
+	db.Where("group_id = ?", group_id).Find(&group_users)
+
+	// get user_ids from group_users
+	user_ids := []uint{}
+	for _, group_user := range group_users {
+		user_ids = append(user_ids, group_user.UserID)
+	}
+
+	// get users
+	users := []models.User{}
+	db.Where("id IN ?", user_ids).Find(&users)
+
+	// create user_id:user_name map
+	user_id_name_map := map[uint]string{}
+	for _, user := range users {
+		user_id_name_map[user.ID] = user.Name
+	}
+
+	// build GroupUserInfo objects
+	group_users_info := []GroupUserInfo{}
+	for _, group_user := range group_users {
+		group_users_info = append(group_users_info, GroupUserInfo{
+			GroupUser: group_user,
+			Name:      user_id_name_map[group_user.UserID],
+		})
+	}
+
+	// return response
+	response := &GetGroupUsersResponse{
+		Success:    true,
+		GroupUsers: group_users_info,
+	}
+	return c.JSON(response)
+}
