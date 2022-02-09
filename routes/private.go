@@ -90,3 +90,41 @@ func CreateGroup(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
+
+// -----------------------------------------------------------------------------
+// Get groups
+// -----------------------------------------------------------------------------
+type GetGroupsResponse struct {
+	Success bool           `json:"success"`
+	Groups  []models.Group `json:"groups"`
+}
+
+func GetGroups(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// get group_users for user
+	group_users := []models.GroupUser{}
+	db.Where("user_id = ?", id).Find(&group_users)
+
+	// get group for each group_id in group_users for user
+	groups := []models.Group{}
+	var ids []uint
+	for _, group_user := range group_users {
+		ids = append(ids, group_user.GroupID)
+	}
+	db.Where("id IN (?)", ids).Find(&groups)
+
+	// return response
+	response := &GetGroupsResponse{
+		Success: true,
+		Groups:  groups,
+	}
+	return c.JSON(response)
+}

@@ -44,6 +44,7 @@ func setupPrivate(app *fiber.App) {
 
 	// Groups endpoints
 	private.Post("/groups", routes.CreateGroup)
+	private.Get("/groups", routes.GetGroups)
 }
 
 func main() {
