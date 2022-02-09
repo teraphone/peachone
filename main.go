@@ -52,6 +52,8 @@ func setupPrivate(app *fiber.App) {
 
 	private.Post("/groups/:group_id/users", routes.CreateGroupUser)
 	private.Get("/groups/:group_id/users", routes.GetGroupUsers)
+
+	private.Get("/groups/:group_id/users/:user_id", routes.GetGroupUser)
 }
 
 func main() {

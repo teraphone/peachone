@@ -1,9 +1,11 @@
 package routes
 
 import (
+	"fmt"
 	"peachone/database"
 	"peachone/models"
 	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -367,8 +369,10 @@ func CreateGroupUser(c *fiber.Ctx) error {
 // Get group users
 // -----------------------------------------------------------------------------
 type GroupUserInfo struct {
-	models.GroupUser
-	Name string `json:"name"`
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	CreatedAt   time.Time `json:"created_at"`
+	GroupRoleID uint      `json:"group_role_id"`
 }
 
 type GetGroupUsersResponse struct {
@@ -401,38 +405,84 @@ func GetGroupUsers(c *fiber.Ctx) error {
 	}
 
 	// get group users
-	group_users := []models.GroupUser{}
-	db.Where("group_id = ?", group_id).Find(&group_users)
-
-	// get user_ids from group_users
-	user_ids := []uint{}
-	for _, group_user := range group_users {
-		user_ids = append(user_ids, group_user.UserID)
-	}
-
-	// get users
-	users := []models.User{}
-	db.Where("id IN ?", user_ids).Find(&users)
-
-	// create user_id:user_name map
-	user_id_name_map := map[uint]string{}
-	for _, user := range users {
-		user_id_name_map[user.ID] = user.Name
-	}
-
-	// build GroupUserInfo objects
+	sql_fmt := "SELECT users.id, users.name, group_users.created_at, group_users.group_role_id " +
+		"FROM group_users " +
+		"JOIN users " +
+		"ON group_users.user_id = users.id " +
+		"WHERE group_users.group_id = %d;"
+	sql := fmt.Sprintf(sql_fmt, group_id)
 	group_users_info := []GroupUserInfo{}
-	for _, group_user := range group_users {
-		group_users_info = append(group_users_info, GroupUserInfo{
-			GroupUser: group_user,
-			Name:      user_id_name_map[group_user.UserID],
-		})
-	}
+	db.Raw(sql).Scan(&group_users_info)
 
 	// return response
 	response := &GetGroupUsersResponse{
 		Success:    true,
 		GroupUsers: group_users_info,
+	}
+	return c.JSON(response)
+}
+
+// -----------------------------------------------------------------------------
+// Get group user
+// -----------------------------------------------------------------------------
+type GetGroupUserResponse struct {
+	Success   bool          `json:"success"`
+	GroupUser GroupUserInfo `json:"group_user"`
+}
+
+func GetGroupUser(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get user_id from request
+	user_id_str := c.Params("user_id")
+	user_id, err := strconv.ParseUint(user_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid user id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is authorized to make request
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// verify group_user is not banned
+	if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to create users in this group.")
+	}
+
+	// get group user
+	sql_fmt := "SELECT users.id, users.name, group_users.created_at, group_users.group_role_id " +
+		"FROM group_users " +
+		"JOIN users " +
+		"ON group_users.user_id = users.id " +
+		"WHERE group_users.group_id = %d AND group_users.user_id = %d;"
+	sql := fmt.Sprintf(sql_fmt, group_id, user_id)
+	group_user_info := &GroupUserInfo{}
+	tx := db.Raw(sql).Scan(group_user_info)
+	if tx.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "Group user not found.")
+	}
+
+	// return response
+	response := &GetGroupUserResponse{
+		Success:   true,
+		GroupUser: *group_user_info,
 	}
 	return c.JSON(response)
 }
