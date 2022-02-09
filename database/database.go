@@ -97,7 +97,6 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_room_type_id;",
 		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deployment_zone_id;",
 		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deprecation_code_id;",
-		"ALTER TABLE users DROP CONSTRAINT fk_users_referrer_id;",
 		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_id;",
 		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_user_id;",
 		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_role_id;",
