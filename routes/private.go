@@ -249,3 +249,49 @@ func UpdateGroup(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// -----------------------------------------------------------------------------
+// Delete group
+// -----------------------------------------------------------------------------
+type DeleteGroupResponse struct {
+	Success bool `json:"success"`
+}
+
+func DeleteGroup(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify group_user has access to group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// verify group_user is owner
+	if !(group_user.GroupRoleID == models.GroupRoleMap["owner"]) {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to delete this group.")
+	}
+
+	// delete group
+	db.Delete(&models.Group{}, group_id)
+
+	// return response
+	response := &DeleteGroupResponse{
+		Success: true,
+	}
+	return c.JSON(response)
+}

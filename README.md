@@ -101,11 +101,12 @@ DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" D
 
 /groups/id/users
 - GET: returns list of user objects that are members of the group (from GroupUsers table)
+- POST: (requires group admin) add user to group with role: "base"
 
 /groups/id/users/id
 - GET: returns user object (from GroupUsers table)
 - DELETE: (requires group admin) removes user from group 
-- PATCH: (requires group admin) modifies user properties 
+- PATCH: (requires group admin) modifies user properties (e.g. role) 
 
 /groups/id/invites
 - GET: (requires group admin) returns list of invite objects for the group (from GroupInviteCodes table)
