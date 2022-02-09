@@ -404,6 +404,11 @@ func GetGroupUsers(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
 	}
 
+	// verify group_user is not banned
+	if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this group.")
+	}
+
 	// get group users
 	sql_fmt := "SELECT users.id, users.name, group_users.created_at, group_users.group_role_id " +
 		"FROM group_users " +
@@ -454,7 +459,7 @@ func GetGroupUser(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
-	// verify user is authorized to make request
+	// verify group_user is authorized to make request
 	group_user := &models.GroupUser{}
 	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
 	if query.RowsAffected == 0 {
@@ -463,7 +468,7 @@ func GetGroupUser(c *fiber.Ctx) error {
 
 	// verify group_user is not banned
 	if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
-		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to create users in this group.")
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this group.")
 	}
 
 	// get group user
