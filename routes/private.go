@@ -117,7 +117,11 @@ func GetGroups(c *fiber.Ctx) error {
 	groups := []models.Group{}
 	var ids []uint
 	for _, group_user := range group_users {
-		ids = append(ids, group_user.GroupID)
+
+		// only return groups that user is not banned from
+		if group_user.GroupRoleID != models.GroupRoleMap["banned"] {
+			ids = append(ids, group_user.GroupID)
+		}
 	}
 	db.Where("id IN (?)", ids).Find(&groups)
 
@@ -155,6 +159,11 @@ func GetGroup(c *fiber.Ctx) error {
 	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
 	if query.RowsAffected == 0 {
 		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// verify group_user is not banned
+	if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this group.")
 	}
 
 	// get group
