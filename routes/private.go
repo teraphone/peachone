@@ -3,6 +3,7 @@ package routes
 import (
 	"peachone/database"
 	"peachone/models"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -177,4 +178,74 @@ func GetGroup(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 
+}
+
+// -----------------------------------------------------------------------------
+// Update group
+// -----------------------------------------------------------------------------
+type UpdateGroupRequest struct {
+	Name string
+}
+
+type UpdateGroupResponse struct {
+	Success bool         `json:"success"`
+	Group   models.Group `json:"group"`
+}
+
+func UpdateGroup(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 32)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get request body
+	req := new(UpdateGroupRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.Name == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group name.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify group_user has access to group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// verify group_user is admin or owner
+	if !(group_user.GroupRoleID == models.GroupRoleMap["admin"] || group_user.GroupRoleID == models.GroupRoleMap["owner"]) {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to update this group.")
+	}
+
+	// get group
+	group := &models.Group{
+		ID: uint(group_id),
+	}
+	db.Where("id = ?", group_id).Find(group)
+
+	// update group
+	group.Name = req.Name
+	db.Model(group).Update("name", req.Name)
+
+	// return response
+	response := &UpdateGroupResponse{
+		Success: true,
+		Group:   *group,
+	}
+	return c.JSON(response)
 }
