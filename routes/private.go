@@ -128,3 +128,44 @@ func GetGroups(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// -----------------------------------------------------------------------------
+// Get group
+// -----------------------------------------------------------------------------
+type GetGroupResponse struct {
+	Success bool         `json:"success"`
+	Group   models.Group `json:"group"`
+}
+
+func GetGroup(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id := c.Params("group_id")
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify group_user has access to group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// get group
+	group := &models.Group{}
+	db.Where("id = ?", group_id).Find(group)
+
+	// return response
+	response := &GetGroupResponse{
+		Success: true,
+		Group:   *group,
+	}
+	return c.JSON(response)
+
+}
