@@ -31,31 +31,31 @@ type DeprecationCode struct {
 }
 
 var RoomRoleMap = map[string]uint{
-	"base":      1,
-	"moderator": 2,
-	"admin":     3,
-	"owner":     4,
-	"guest":     5,
-	"banned":    6,
+	"banned":    1,
+	"guest":     2,
+	"member":    3,
+	"moderator": 4,
+	"admin":     5,
+	"owner":     6,
 }
 
 type RoomRole struct {
 	ID   uint
-	Role string // must initialize: "base", "moderator", "admin", "owner", "guest", "banned"
+	Role string // must initialize: "banned", "guest", "member", "moderator", "admin", "owner"
 }
 
 var GroupRoleMap = map[string]uint{
-	"base":      1,
-	"moderator": 2,
-	"admin":     3,
-	"owner":     4,
-	"guest":     5,
-	"banned":    6,
+	"banned":    1,
+	"guest":     2,
+	"member":    3,
+	"moderator": 4,
+	"admin":     5,
+	"owner":     6,
 }
 
 type GroupRole struct {
 	ID   uint
-	Role string // must initialize: "base", "moderator", "admin", "owner", "guest", "banned"
+	Role string // must initialize: "banned", "guest", "member", "moderator", "admin", "owner"
 }
 
 var InviteStatusMap = map[string]uint{

@@ -13,6 +13,32 @@ import (
 )
 
 func InitDBTables(db *gorm.DB) {
+	// drop constraints
+	sql_drop_constraints := []string{
+		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_group_id;",
+		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_room_type_id;",
+		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deployment_zone_id;",
+		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deprecation_code_id;",
+		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_id;",
+		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_user_id;",
+		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_role_id;",
+		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_room_id;",
+		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_user_id;",
+		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_room_role_id;",
+		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_group_id;",
+		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_invite_status_id;",
+		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_referrer_id;",
+		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_room_id;",
+		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_user_id;",
+		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_referrer_id;",
+	}
+	// run sql statements
+	for _, sql := range sql_drop_constraints {
+		err := db.Exec(sql).Error
+		if err != nil {
+			log.Println("error:", err)
+		}
+	}
 
 	// check if db has room_type table, create and populate if not
 	if !db.Migrator().HasTable(&models.RoomType{}) {
@@ -50,12 +76,12 @@ func InitDBTables(db *gorm.DB) {
 		db.Migrator().CreateTable(&models.RoomRole{})
 
 		// add room roles
-		db.Create(&models.RoomRole{Role: "base"})
+		db.Create(&models.RoomRole{Role: "banned"})
+		db.Create(&models.RoomRole{Role: "guest"})
+		db.Create(&models.RoomRole{Role: "member"})
 		db.Create(&models.RoomRole{Role: "moderator"})
 		db.Create(&models.RoomRole{Role: "admin"})
 		db.Create(&models.RoomRole{Role: "owner"})
-		db.Create(&models.RoomRole{Role: "guest"})
-		db.Create(&models.RoomRole{Role: "banned"})
 	}
 
 	// check if db has group_role table, create and populate if not
@@ -64,12 +90,12 @@ func InitDBTables(db *gorm.DB) {
 		db.Migrator().CreateTable(&models.GroupRole{})
 
 		// add group roles
-		db.Create(&models.GroupRole{Role: "base"})
+		db.Create(&models.GroupRole{Role: "banned"})
+		db.Create(&models.GroupRole{Role: "guest"})
+		db.Create(&models.GroupRole{Role: "member"})
 		db.Create(&models.GroupRole{Role: "moderator"})
 		db.Create(&models.GroupRole{Role: "admin"})
 		db.Create(&models.GroupRole{Role: "owner"})
-		db.Create(&models.GroupRole{Role: "guest"})
-		db.Create(&models.GroupRole{Role: "banned"})
 	}
 
 	// check if db has invite_status table, create and populate if not
@@ -92,24 +118,7 @@ func InitDBTables(db *gorm.DB) {
 	db.AutoMigrate(&models.Referral{})
 
 	// define foreign key relationships
-	sql_statements := []string{
-		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_group_id;",
-		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_room_type_id;",
-		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deployment_zone_id;",
-		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deprecation_code_id;",
-		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_id;",
-		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_user_id;",
-		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_role_id;",
-		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_room_id;",
-		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_user_id;",
-		"ALTER TABLE room_users DROP CONSTRAINT fk_room_users_room_role_id;",
-		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_group_id;",
-		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_invite_status_id;",
-		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_referrer_id;",
-		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_room_id;",
-		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_user_id;",
-		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_referrer_id;",
-
+	sql_add_constraints := []string{
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_group_id FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE;",
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_room_type_id FOREIGN KEY (room_type_id) REFERENCES room_types(id);",
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_deployment_zone_id FOREIGN KEY (deployment_zone_id) REFERENCES deployment_zones(id);",
@@ -128,7 +137,7 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE referrals ADD CONSTRAINT fk_referrals_referrer_id FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE SET NULL;",
 	}
 	// run sql statements
-	for _, sql := range sql_statements {
+	for _, sql := range sql_add_constraints {
 		err := db.Exec(sql).Error
 		if err != nil {
 			log.Println("error:", err)
