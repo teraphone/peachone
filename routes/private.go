@@ -293,7 +293,8 @@ func DeleteGroup(c *fiber.Ctx) error {
 // Create group user
 // -----------------------------------------------------------------------------
 type CreateGroupUserRequest struct {
-	UserID uint `json:"user_id"`
+	UserID  uint `json:"user_id"`
+	IsGuest bool `json:"is_guest"`
 }
 
 type CreateGroupUserResponse struct {
@@ -343,9 +344,8 @@ func CreateGroupUser(c *fiber.Ctx) error {
 
 	// verify new user is not already in group
 	new_group_user := &models.GroupUser{
-		GroupID:     uint(group_id),
-		UserID:      req.UserID,
-		GroupRoleID: models.GroupRoleMap["base"],
+		GroupID: uint(group_id),
+		UserID:  req.UserID,
 	}
 	query = db.Where("user_id = ? AND group_id = ?", req.UserID, group_id).Find(new_group_user)
 
@@ -354,6 +354,11 @@ func CreateGroupUser(c *fiber.Ctx) error {
 	}
 
 	// create new group user
+	if req.IsGuest {
+		new_group_user.GroupRoleID = models.GroupRoleMap["guest"]
+	} else {
+		new_group_user.GroupRoleID = models.GroupRoleMap["member"]
+	}
 	db.Create(new_group_user)
 
 	// return response
@@ -488,6 +493,101 @@ func GetGroupUser(c *fiber.Ctx) error {
 	response := &GetGroupUserResponse{
 		Success:   true,
 		GroupUser: *group_user_info,
+	}
+	return c.JSON(response)
+}
+
+// -----------------------------------------------------------------------------
+// Update group user
+// -----------------------------------------------------------------------------
+type UpdateGroupUserRequest struct {
+	GroupRoleID uint `json:"group_role_id"`
+}
+
+type UpdateGroupUserResponse struct {
+	Success   bool             `json:"success"`
+	GroupUser models.GroupUser `json:"group_user"`
+}
+
+func UpdateGroupUser(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get user_id from request
+	user_id_str := c.Params("user_id")
+	user_id, err := strconv.ParseUint(user_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid user id.")
+	}
+
+	// verify id is not requesting themselves
+	if id == uint(user_id) {
+		return fiber.NewError(fiber.StatusBadRequest, "You cannot change your own role.")
+	}
+
+	// get request body
+	req := &UpdateGroupUserRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body.")
+	}
+
+	// check group_role_id is in valid range
+	if req.GroupRoleID < 1 || req.GroupRoleID > 6 {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group_role_id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify group_user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// get target_group_user
+	target_group_user := &models.GroupUser{}
+	query = db.Where("user_id = ? AND group_id = ?", user_id, group_id).Find(target_group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "user_id not found in group.")
+	}
+
+	// logic to determine if requester_role_id can change current_role_id to target_role_id
+	requester_role_id := group_user.GroupRoleID
+	current_role_id := target_group_user.GroupRoleID
+	target_role_id := req.GroupRoleID
+
+	// can change role if...
+	// you outrank or are an owner, AND
+	// you are moderator or higher, AND
+	// you outrank the new role or are an owner.
+	condition1 := requester_role_id == models.GroupRoleMap["owner"] || (requester_role_id > current_role_id)
+	condition2 := requester_role_id >= models.GroupRoleMap["moderator"]
+	condition3 := requester_role_id == models.GroupRoleMap["owner"] || (requester_role_id > target_role_id)
+	if condition1 && condition2 && condition3 {
+		target_group_user.GroupRoleID = target_role_id
+	} else {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to change this user's role.")
+	}
+
+	// update target_group_user
+	db.Model(target_group_user).Update("group_role_id", target_group_user.GroupRoleID)
+
+	// return response
+	response := &UpdateGroupUserResponse{
+		Success:   true,
+		GroupUser: *target_group_user,
 	}
 	return c.JSON(response)
 }
