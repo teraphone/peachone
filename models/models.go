@@ -61,7 +61,6 @@ type GroupInvite struct {
 	GroupID        uint      `json:"group_id"`         // fk: Group.ID
 	InviteStatusID uint      `json:"invite_status_id"` // fk: InviteStatus.ID
 	ReferrerID     uint      `json:"referrer_id"`      // fk: User.ID
-	RoomID         uint      `json:"room_id"`          // fk: Room.ID (optional)
 }
 
 type Referral struct {
