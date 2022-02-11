@@ -2,3 +2,4 @@ peachone
 .vscode
 log.txt
 .DS_Store
+database/queries.sql
