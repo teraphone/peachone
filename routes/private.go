@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"math/rand"
 	"peachone/database"
 	"peachone/models"
 	"peachone/queries"
@@ -680,6 +681,67 @@ func DeleteGroupUser(c *fiber.Ctx) error {
 	// return response
 	response := &DeleteGroupUserResponse{
 		Success: true,
+	}
+	return c.JSON(response)
+}
+
+// -----------------------------------------------------------------------------
+// Create group invite
+// -----------------------------------------------------------------------------
+type CreateGroupInviteResponse struct {
+	Success     bool               `json:"success"`
+	GroupInvite models.GroupInvite `json:"group_invite"`
+}
+
+func CreateGroupInvite(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// verify user is admin or owner
+	if group_user.GroupRoleID < models.GroupRoleMap["admin"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to invite users to this group.")
+	}
+
+	// generate 16-digit random numeric code
+	rand.Seed(time.Now().UnixNano())
+	var code string
+	for i := 0; i < 16; i++ {
+		code += strconv.Itoa(rand.Intn(10))
+	}
+
+	// create group invite
+	group_invite := &models.GroupInvite{}
+	group_invite.ExpiresAt = time.Now().Add(time.Hour * 730)
+	group_invite.Code = code
+	group_invite.GroupID = uint(group_id)
+	group_invite.InviteStatusID = models.InviteStatusMap["pending"]
+	group_invite.ReferrerID = id
+	db.Create(group_invite)
+
+	// return response
+	response := &CreateGroupInviteResponse{
+		Success:     true,
+		GroupInvite: *group_invite,
 	}
 	return c.JSON(response)
 }
