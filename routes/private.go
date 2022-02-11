@@ -812,3 +812,64 @@ func GetGroupInvites(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// -----------------------------------------------------------------------------
+// Get group invite
+// -----------------------------------------------------------------------------
+type GetGroupInviteResponse struct {
+	Success bool               `json:"success"`
+	Invite  models.GroupInvite `json:"invite"`
+}
+
+func GetGroupInvite(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get invite_id from request
+	invite_id_str := c.Params("id")
+	invite_id, err := strconv.ParseUint(invite_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid invite id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's invites.")
+	}
+
+	// verify user is admin or owner
+	if group_user.GroupRoleID < models.GroupRoleMap["admin"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's invites.")
+	}
+
+	// get group invite
+	group_invite := &models.GroupInvite{}
+	query = db.Where("group_id = ? and id = ?", group_id, invite_id).Find(group_invite)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "No invite found.")
+	}
+
+	// return response
+	response := &GetGroupInviteResponse{
+		Success: true,
+		Invite:  *group_invite,
+	}
+	return c.JSON(response)
+
+	// TODO: use id instead of code
+}
