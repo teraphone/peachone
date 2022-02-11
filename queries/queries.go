@@ -51,3 +51,21 @@ func GetGroupUsersInfo(db *gorm.DB, group_id uint) ([]GroupUserInfo, error) {
 
 	return group_users_info, nil
 }
+
+type GroupUserRoleCount struct {
+	Count uint `json:"count"`
+}
+
+func GetGroupUserRoleCount(db *gorm.DB, group_id uint, group_role_id uint) (*GroupUserRoleCount, error) {
+	sql_fmt := "SELECT COUNT(*) as count " +
+		"FROM group_users " +
+		"WHERE group_id = %d AND group_role_id = %d;"
+	sql := fmt.Sprintf(sql_fmt, group_id, group_role_id)
+	group_user_role_count := GroupUserRoleCount{}
+	tx := db.Raw(sql).Scan(&group_user_role_count)
+	if tx.RowsAffected == 0 {
+		return nil, fiber.NewError(fiber.StatusNotFound, "Ruh-roh! Can't count group users with that role.")
+	}
+
+	return &group_user_role_count, nil
+}

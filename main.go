@@ -55,6 +55,7 @@ func setupPrivate(app *fiber.App) {
 
 	private.Get("/groups/:group_id/users/:user_id", routes.GetGroupUser)
 	private.Patch("/groups/:group_id/users/:user_id", routes.UpdateGroupUser)
+	private.Delete("/groups/:group_id/users/:user_id", routes.DeleteGroupUser)
 }
 
 func main() {

@@ -591,3 +591,95 @@ func UpdateGroupUser(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// -----------------------------------------------------------------------------
+// Delete group user
+// -----------------------------------------------------------------------------
+type DeleteGroupUserResponse struct {
+	Success bool `json:"success"`
+}
+
+func DeleteGroupUser(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get user_id from request
+	user_id_str := c.Params("user_id")
+	user_id, err := strconv.ParseUint(user_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid user id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// verify target user is in group
+	target_group_user := &models.GroupUser{}
+	query = db.Where("user_id = ? AND group_id = ?", user_id, group_id).Find(target_group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "user_id not found in group.")
+	}
+
+	// logic to check if group_user can delete target_group_user
+	// rules...
+	// to delete yourself:
+	// - you must not be an owner OR
+	// - there is another owner in the group
+	// to delete another user:
+	// - you must be admin or owner AND
+	// - you must outrank the target_group_user OR be an owner
+	can_delete := false
+	if id == uint(user_id) {
+		if group_user.GroupRoleID != models.GroupRoleMap["owner"] {
+			can_delete = true
+		} else {
+			// check if there is another owner in the group
+			role_count, err := queries.GetGroupUserRoleCount(db, uint(group_id), models.GroupRoleMap["owner"])
+			if err != nil {
+				return err
+			} else if role_count.Count > 1 {
+				can_delete = true
+			} else {
+				return fiber.NewError(fiber.StatusUnauthorized, "You must promote another owner in the group before you can remove yourself.")
+			}
+		}
+	} else {
+		requester_role_id := group_user.GroupRoleID
+		target_role_id := target_group_user.GroupRoleID
+		condition1 := requester_role_id >= models.GroupRoleMap["admin"]
+		condition2 := requester_role_id == models.GroupRoleMap["owner"] || (requester_role_id > target_role_id)
+		if condition1 && condition2 {
+			can_delete = true
+		}
+	}
+
+	if !can_delete {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to delete this user.")
+	}
+
+	// delete user
+	db.Delete(target_group_user)
+
+	// return response
+	response := &DeleteGroupUserResponse{
+		Success: true,
+	}
+	return c.JSON(response)
+}
