@@ -745,3 +745,70 @@ func CreateGroupInvite(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// -----------------------------------------------------------------------------
+// Get group invites
+// -----------------------------------------------------------------------------
+type GetGroupInvitesRequest struct {
+	InviteStatusID uint `json:"invite_status_id,omitempty"`
+}
+
+type GetGroupInvitesResponse struct {
+	Success bool                 `json:"success"`
+	Invites []models.GroupInvite `json:"invites"`
+}
+
+func GetGroupInvites(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get group_role_id from request
+	req := &GetGroupInvitesRequest{}
+	err = c.BodyParser(req)
+	if err != nil {
+		req.InviteStatusID = 0
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's invites.")
+	}
+
+	// verify user is admin or owner
+	if group_user.GroupRoleID < models.GroupRoleMap["admin"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's invites.")
+	}
+
+	// get group invites
+	group_invites := []models.GroupInvite{}
+	if req.InviteStatusID == 0 {
+		query = db.Where("group_id = ? and referrer_id = ?", group_id, id).Find(&group_invites)
+	} else {
+		query = db.Where("group_id = ? and referrer_id = ? and invite_status_id = ?", group_id, id, req.InviteStatusID).Find(&group_invites)
+	}
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "No invites found.")
+	}
+
+	// return response
+	response := &GetGroupInvitesResponse{
+		Success: true,
+		Invites: group_invites,
+	}
+	return c.JSON(response)
+}
