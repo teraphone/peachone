@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"fmt"
 	"peachone/database"
 	"peachone/models"
+	"peachone/queries"
 	"strconv"
 	"time"
 
@@ -40,9 +40,8 @@ type CreateGroupRequest struct {
 }
 
 type CreateGroupResponse struct {
-	Success   bool             `json:"success"`
-	Group     models.Group     `json:"group"`
-	GroupUser models.GroupUser `json:"group_user"`
+	Success bool         `json:"success"`
+	Group   models.Group `json:"group"`
 }
 
 func CreateGroup(c *fiber.Ctx) error {
@@ -78,9 +77,8 @@ func CreateGroup(c *fiber.Ctx) error {
 
 	// return response
 	response := &CreateGroupResponse{
-		Success:   true,
-		Group:     *group,
-		GroupUser: *group_user,
+		Success: true,
+		Group:   *group,
 	}
 	return c.JSON(response)
 }
@@ -292,14 +290,22 @@ func DeleteGroup(c *fiber.Ctx) error {
 // -----------------------------------------------------------------------------
 // Create group user
 // -----------------------------------------------------------------------------
+type GroupUserInfo struct {
+	UserID      uint      `json:"user_id"`
+	Name        string    `json:"name"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	GroupRoleID uint      `json:"group_role_id"`
+}
+
 type CreateGroupUserRequest struct {
 	UserID  uint `json:"user_id"`
 	IsGuest bool `json:"is_guest"`
 }
 
 type CreateGroupUserResponse struct {
-	Success   bool             `json:"success"`
-	GroupUser models.GroupUser `json:"group_user"`
+	Success   bool                  `json:"success"`
+	GroupUser queries.GroupUserInfo `json:"group_user"`
 }
 
 func CreateGroupUser(c *fiber.Ctx) error {
@@ -361,10 +367,16 @@ func CreateGroupUser(c *fiber.Ctx) error {
 	}
 	db.Create(new_group_user)
 
+	// get group_user_info
+	group_user_info, err := queries.GetGroupUserInfo(db, uint(group_id), new_group_user.UserID)
+	if err != nil {
+		return err
+	}
+
 	// return response
 	response := &CreateGroupUserResponse{
 		Success:   true,
-		GroupUser: *new_group_user,
+		GroupUser: *group_user_info,
 	}
 	return c.JSON(response)
 
@@ -373,16 +385,9 @@ func CreateGroupUser(c *fiber.Ctx) error {
 // -----------------------------------------------------------------------------
 // Get group users
 // -----------------------------------------------------------------------------
-type GroupUserInfo struct {
-	ID          uint      `json:"id"`
-	Name        string    `json:"name"`
-	CreatedAt   time.Time `json:"created_at"`
-	GroupRoleID uint      `json:"group_role_id"`
-}
-
 type GetGroupUsersResponse struct {
-	Success    bool            `json:"success"`
-	GroupUsers []GroupUserInfo `json:"group_users"`
+	Success    bool                    `json:"success"`
+	GroupUsers []queries.GroupUserInfo `json:"group_users"`
 }
 
 func GetGroupUsers(c *fiber.Ctx) error {
@@ -415,14 +420,10 @@ func GetGroupUsers(c *fiber.Ctx) error {
 	}
 
 	// get group users
-	sql_fmt := "SELECT users.id, users.name, group_users.created_at, group_users.group_role_id " +
-		"FROM group_users " +
-		"JOIN users " +
-		"ON group_users.user_id = users.id " +
-		"WHERE group_users.group_id = %d;"
-	sql := fmt.Sprintf(sql_fmt, group_id)
-	group_users_info := []GroupUserInfo{}
-	db.Raw(sql).Scan(&group_users_info)
+	group_users_info, err := queries.GetGroupUsersInfo(db, uint(group_id))
+	if err != nil {
+		return err
+	}
 
 	// return response
 	response := &GetGroupUsersResponse{
@@ -436,8 +437,8 @@ func GetGroupUsers(c *fiber.Ctx) error {
 // Get group user
 // -----------------------------------------------------------------------------
 type GetGroupUserResponse struct {
-	Success   bool          `json:"success"`
-	GroupUser GroupUserInfo `json:"group_user"`
+	Success   bool                  `json:"success"`
+	GroupUser queries.GroupUserInfo `json:"group_user"`
 }
 
 func GetGroupUser(c *fiber.Ctx) error {
@@ -477,16 +478,9 @@ func GetGroupUser(c *fiber.Ctx) error {
 	}
 
 	// get group user
-	sql_fmt := "SELECT users.id, users.name, group_users.created_at, group_users.group_role_id " +
-		"FROM group_users " +
-		"JOIN users " +
-		"ON group_users.user_id = users.id " +
-		"WHERE group_users.group_id = %d AND group_users.user_id = %d;"
-	sql := fmt.Sprintf(sql_fmt, group_id, user_id)
-	group_user_info := &GroupUserInfo{}
-	tx := db.Raw(sql).Scan(group_user_info)
-	if tx.RowsAffected == 0 {
-		return fiber.NewError(fiber.StatusNotFound, "Group user not found.")
+	group_user_info, err := queries.GetGroupUserInfo(db, uint(group_id), uint(user_id))
+	if err != nil {
+		return err
 	}
 
 	// return response
@@ -505,8 +499,8 @@ type UpdateGroupUserRequest struct {
 }
 
 type UpdateGroupUserResponse struct {
-	Success   bool             `json:"success"`
-	GroupUser models.GroupUser `json:"group_user"`
+	Success   bool                  `json:"success"`
+	GroupUser queries.GroupUserInfo `json:"group_user"`
 }
 
 func UpdateGroupUser(c *fiber.Ctx) error {
@@ -584,10 +578,16 @@ func UpdateGroupUser(c *fiber.Ctx) error {
 	// update target_group_user
 	db.Model(target_group_user).Update("group_role_id", target_group_user.GroupRoleID)
 
+	// read back
+	group_user_info, err := queries.GetGroupUserInfo(db, uint(group_id), uint(user_id))
+	if err != nil {
+		return err
+	}
+
 	// return response
 	response := &UpdateGroupUserResponse{
 		Success:   true,
-		GroupUser: *target_group_user,
+		GroupUser: *group_user_info,
 	}
 	return c.JSON(response)
 }
