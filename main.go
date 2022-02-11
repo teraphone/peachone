@@ -60,7 +60,8 @@ func setupPrivate(app *fiber.App) {
 	private.Post("/groups/:group_id/invites", routes.CreateGroupInvite)
 	private.Get("/groups/:group_id/invites", routes.GetGroupInvites)
 
-	private.Get("/groups/:group_id/invites/:id", routes.GetGroupInvite)
+	private.Get("/groups/:group_id/invites/:invite_id", routes.GetGroupInvite)
+	private.Delete("/groups/:group_id/invites/:invite_id", routes.DeleteGroupInvite)
 }
 
 func main() {
