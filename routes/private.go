@@ -388,6 +388,25 @@ func CreateGroupUser(c *fiber.Ctx) error {
 	}
 	db.Create(new_group_user)
 
+	// add user to group's rooms
+	rooms := []models.Room{}
+	db.Where("group_id = ?", group_id).Find(&rooms)
+	room_users := []models.RoomUser{}
+	for _, room := range rooms {
+		room_user := &models.RoomUser{
+			RoomID:     room.ID,
+			UserID:     new_group_user.UserID,
+			RoomRoleID: new_group_user.GroupRoleID,
+			CanJoin:    room.RoomTypeID == models.RoomTypeMap["public"],
+			CanSee:     room.RoomTypeID != models.RoomTypeMap["secret"],
+		}
+		room_users = append(room_users, *room_user)
+	}
+	tx := db.Create(&room_users)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	// get group_user_info
 	group_user_info, err := queries.GetGroupUserInfo(db, uint(group_id), new_group_user.UserID)
 	if err != nil {
@@ -1087,5 +1106,5 @@ func CreateRoom(c *fiber.Ctx) error {
 }
 
 // TODO:
-// - when a user is added to a group, add them to all public rooms
 // - allow non-admin users to add themselves to a group using an invite code
+// - when a group user is banned, update their room_user roles and can_join/can_see
