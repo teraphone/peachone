@@ -320,8 +320,8 @@ type GroupUserInfo struct {
 }
 
 type CreateGroupUserRequest struct {
-	UserID  uint `json:"user_id"`
-	IsGuest bool `json:"is_guest"`
+	UserID     uint   `json:"user_id"`
+	InviteCode string `json:"invite_code"`
 }
 
 type CreateGroupUserResponse struct {
@@ -357,58 +357,41 @@ func CreateGroupUser(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
-	// verify group_user has access to group
-	group_user := &models.GroupUser{}
-	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
-	if query.RowsAffected == 0 {
-		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
-	}
-
-	// verify group_user is admin or owner
-	if !(group_user.GroupRoleID == models.GroupRoleMap["admin"] || group_user.GroupRoleID == models.GroupRoleMap["owner"]) {
-		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to create users in this group.")
-	}
-
-	// verify new user is not already in group
-	new_group_user := &models.GroupUser{
-		GroupID: uint(group_id),
-		UserID:  req.UserID,
-	}
-	query = db.Where("user_id = ? AND group_id = ?", req.UserID, group_id).Find(new_group_user)
-
-	if query.RowsAffected != 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "User is already in this group.")
-	}
-
-	// create new group user
-	if req.IsGuest {
-		new_group_user.GroupRoleID = models.GroupRoleMap["guest"]
-	} else {
-		new_group_user.GroupRoleID = models.GroupRoleMap["member"]
-	}
-	db.Create(new_group_user)
-
-	// add user to group's rooms
-	rooms := []models.Room{}
-	db.Where("group_id = ?", group_id).Find(&rooms)
-	room_users := []models.RoomUser{}
-	for _, room := range rooms {
-		room_user := &models.RoomUser{
-			RoomID:     room.ID,
-			UserID:     new_group_user.UserID,
-			RoomRoleID: new_group_user.GroupRoleID,
-			CanJoin:    room.RoomTypeID == models.RoomTypeMap["public"],
-			CanSee:     room.RoomTypeID != models.RoomTypeMap["secret"],
+	// check invite_code
+	valid_invite_code := false
+	if req.InviteCode != "" {
+		group_invite := &models.GroupInvite{}
+		query := db.Where("code = ? AND group_id = ? AND invite_status = ?",
+			req.InviteCode, group_id, models.InviteStatusMap["pending"]).Find(group_invite)
+		if query.RowsAffected == 0 {
+			return fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
 		}
-		room_users = append(room_users, *room_user)
+		valid_invite_code = true
 	}
-	tx := db.Create(&room_users)
-	if tx.Error != nil {
-		return tx.Error
+
+	if !valid_invite_code {
+		// verify requester is already in group
+		requester := &models.GroupUser{}
+		query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(requester)
+		if query.RowsAffected == 0 {
+			return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+		}
+
+		// verify requester is admin or owner
+		if !(requester.GroupRoleID == models.GroupRoleMap["admin"] || requester.GroupRoleID == models.GroupRoleMap["owner"]) {
+			return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to create users in this group.")
+		}
 	}
+
+	err = queries.AddUserToGroupAndRooms(db, req.UserID, uint(group_id))
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error adding user to group.")
+	}
+
+	// TODO: set invite status to "accepted"
 
 	// get group_user_info
-	group_user_info, err := queries.GetGroupUserInfo(db, uint(group_id), new_group_user.UserID)
+	group_user_info, err := queries.GetGroupUserInfo(db, uint(group_id), req.UserID)
 	if err != nil {
 		return err
 	}
@@ -716,6 +699,8 @@ func DeleteGroupUser(c *fiber.Ctx) error {
 
 	// delete user
 	db.Delete(target_group_user)
+
+	// TODO: also delete room_user entries for user and group
 
 	// return response
 	response := &DeleteGroupUserResponse{
@@ -1106,5 +1091,5 @@ func CreateRoom(c *fiber.Ctx) error {
 }
 
 // TODO:
-// - allow non-admin users to add themselves to a group using an invite code
+// - add invite_code to user signup, automatically add to group and rooms
 // - when a group user is banned, update their room_user roles and can_join/can_see
