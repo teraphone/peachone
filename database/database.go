@@ -28,8 +28,6 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_group_id;",
 		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_invite_status_id;",
 		"ALTER TABLE group_invites DROP CONSTRAINT fk_group_invites_referrer_id;",
-		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_user_id;",
-		"ALTER TABLE referrals DROP CONSTRAINT fk_referrals_referrer_id;",
 	}
 	// run sql statements
 	for _, sql := range sql_drop_constraints {
@@ -131,8 +129,6 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE group_invites ADD CONSTRAINT fk_group_invites_group_id FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE;",
 		"ALTER TABLE group_invites ADD CONSTRAINT fk_group_invites_invite_status_id FOREIGN KEY (invite_status_id) REFERENCES invite_statuses(id);",
 		"ALTER TABLE group_invites ADD CONSTRAINT fk_group_invites_referrer_id FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE CASCADE;",
-		"ALTER TABLE referrals ADD CONSTRAINT fk_referrals_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;",
-		"ALTER TABLE referrals ADD CONSTRAINT fk_referrals_referrer_id FOREIGN KEY (referrer_id) REFERENCES users(id) ON DELETE SET NULL;",
 	}
 	// run sql statements
 	for _, sql := range sql_add_constraints {

@@ -66,15 +66,29 @@ func CreateGroup(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
+	// check if group name already exists
+	query := db.Where("name = ?", req.Name).Find(&models.Group{})
+	if query.RowsAffected != 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Group name already exists.")
+	}
+
 	// create group
 	group := &models.Group{Name: req.Name}
-	db.Create(group)
+	tx := db.Create(group)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	// create group_user
 	group_user := &models.GroupUser{
 		GroupID:     group.ID,
 		UserID:      id,
 		GroupRoleID: models.GroupRoleMap["owner"],
 	}
-	db.Create(group_user)
+	tx = db.Create(group_user)
+	if tx.Error != nil {
+		return tx.Error
+	}
 
 	// return response
 	response := &CreateGroupResponse{
@@ -222,6 +236,12 @@ func UpdateGroup(c *fiber.Ctx) error {
 	// verify group_user is admin or owner
 	if !(group_user.GroupRoleID == models.GroupRoleMap["admin"] || group_user.GroupRoleID == models.GroupRoleMap["owner"]) {
 		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to update this group.")
+	}
+
+	// verify new group name does not already exist
+	query = db.Where("name = ?", req.Name).Find(&models.Group{})
+	if query.RowsAffected != 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Group name already exists.")
 	}
 
 	// get group
@@ -996,6 +1016,12 @@ func CreateRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid room type.")
 	}
 
+	// check if room name already exists in group
+	query = db.Where("group_id = ? and name = ?", group_id, req.Name).Find(&models.Room{})
+	if query.RowsAffected != 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Room name already exists in group.")
+	}
+
 	// create room
 	room := &models.Room{
 		Name:              req.Name,
@@ -1018,13 +1044,10 @@ func CreateRoom(c *fiber.Ctx) error {
 		CanJoin:    true,
 		CanSee:     true,
 	}
-	query = db.Create(room_owner)
-	if query.RowsAffected == 0 {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error creating room owner.")
-	}
 
-	// add the other group members that aren't banned as members
-	// make sure to set can_join and can_see appropriately for secret and private rooms
+	// add the owner to the room.
+	// add the other group members that aren't banned as members.
+	// set can_join and can_see appropriately for secret and private rooms.
 	group_users, err := queries.GetGroupUsersInfo(db, uint(group_id))
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error getting group users.")
@@ -1033,16 +1056,19 @@ func CreateRoom(c *fiber.Ctx) error {
 	can_see := room.RoomTypeID != models.RoomTypeMap["secret"]
 	can_join := room.RoomTypeID == models.RoomTypeMap["public"]
 	for _, group_user := range group_users {
-		// TODO: bug... owner is getting created twice
 		if group_user.GroupRoleID != models.GroupRoleMap["banned"] {
-			room_user := models.RoomUser{
-				RoomID:     room.ID,
-				UserID:     group_user.UserID,
-				RoomRoleID: group_user.GroupRoleID,
-				CanJoin:    can_join,
-				CanSee:     can_see,
+			if group_user.UserID == id {
+				room_users = append(room_users, *room_owner)
+			} else {
+				room_user := &models.RoomUser{
+					RoomID:     room.ID,
+					UserID:     group_user.UserID,
+					RoomRoleID: group_user.GroupRoleID,
+					CanJoin:    can_join,
+					CanSee:     can_see,
+				}
+				room_users = append(room_users, *room_user)
 			}
-			room_users = append(room_users, room_user)
 		}
 	}
 	if len(room_users) > 0 {

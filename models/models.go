@@ -8,15 +8,15 @@ type Group struct {
 	ID        uint      `gorm:"primary_key" json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Name      string    `json:"name"`
+	Name      string    `gorm:"unique" json:"name"`
 }
 
 type Room struct {
-	ID                uint      `gorm:"primary_key" json:"id"`
+	ID                uint      `gorm:"unique;autoIncrement" json:"id"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
-	Name              string    `json:"name"`
-	GroupID           uint      `json:"group_id"` // fk: Group.ID
+	Name              string    `gorm:"primary_key" json:"name"`
+	GroupID           uint      `gorm:"primary_key" json:"group_id"` // fk: Group.ID
 	Capacity          uint      `json:"capacity"`
 	RoomTypeID        uint      `json:"room_type_id"`        // fk: RoomType.ID
 	DeploymentZoneID  uint      `json:"deployment_zone_id"`  // fk: DeploymentZone.ID
@@ -33,21 +33,19 @@ type User struct {
 }
 
 type GroupUser struct {
-	ID          uint      `gorm:"primary_key" json:"id"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-	GroupID     uint      `json:"group_id"`      // fk: Group.ID
-	UserID      uint      `json:"user_id"`       // fk: User.ID
-	GroupRoleID uint      `json:"group_role_id"` // fk: GroupRole.ID
+	GroupID     uint      `gorm:"primary_key" json:"group_id"` // fk: Group.ID
+	UserID      uint      `gorm:"primary_key" json:"user_id"`  // fk: User.ID
+	GroupRoleID uint      `json:"group_role_id"`               // fk: GroupRole.ID
 }
 
 type RoomUser struct {
-	ID         uint      `gorm:"primary_key" json:"id"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
-	RoomID     uint      `json:"room_id"`      // fk: Room.ID
-	UserID     uint      `json:"user_id"`      // fk: User.ID
-	RoomRoleID uint      `json:"room_role_id"` // fk: RoomRole.ID
+	RoomID     uint      `gorm:"primary_key" json:"room_id"` // fk: Room.ID
+	UserID     uint      `gorm:"primary_key" json:"user_id"` // fk: User.ID
+	RoomRoleID uint      `json:"room_role_id"`               // fk: RoomRole.ID
 	CanJoin    bool      `json:"can_join"`
 	CanSee     bool      `json:"can_see"`
 }
@@ -64,9 +62,8 @@ type GroupInvite struct {
 }
 
 type Referral struct {
-	ID         uint      `gorm:"primary_key" json:"id"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
-	UserID     uint      `json:"user_id"`     // fk: User.ID
-	ReferrerID uint      `json:"referrer_id"` // fk: User.ID
+	UserID     uint      `gorm:"primary_key" json:"user_id"`
+	ReferrerID uint      `gorm:"primary_key" json:"referrer_id"`
 }
