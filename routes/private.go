@@ -935,3 +935,131 @@ func DeleteGroupInvite(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// -----------------------------------------------------------------------------
+// Create room
+// -----------------------------------------------------------------------------
+type CreateRoomRequest struct {
+	Name       string `json:"name"`
+	Capacity   uint   `json:"capacity"`
+	RoomTypeID uint   `json:"room_type_id"` // fk: RoomType.ID
+}
+
+type CreateRoomResponse struct {
+	Success bool        `json:"success"`
+	Room    models.Room `json:"room"`
+}
+
+func CreateRoom(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's rooms.")
+	}
+
+	// verify user is admin or owner
+	if group_user.GroupRoleID < models.GroupRoleMap["admin"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's rooms.")
+	}
+
+	// get request body
+	req := &CreateRoomRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body.")
+	}
+
+	// validate request body
+	if req.Name == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room name.")
+	}
+	if !(req.Capacity == 8 || req.Capacity == 16) {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room capacity.")
+	}
+	if !(1 <= req.RoomTypeID && req.RoomTypeID <= 3) {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room type.")
+	}
+
+	// create room
+	room := &models.Room{
+		Name:              req.Name,
+		GroupID:           uint(group_id),
+		Capacity:          req.Capacity,
+		RoomTypeID:        req.RoomTypeID,
+		DeploymentZoneID:  models.DeploymentZoneMap["us-west1-b"],
+		DeprecationCodeID: models.DeprecationCodeMap["active"],
+	}
+	query = db.Create(room)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating room.")
+	}
+
+	// Requester is room owner
+	room_owner := &models.RoomUser{
+		RoomID:     room.ID,
+		UserID:     id,
+		RoomRoleID: models.RoomRoleMap["owner"],
+		CanJoin:    true,
+		CanSee:     true,
+	}
+	query = db.Create(room_owner)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating room owner.")
+	}
+
+	// add the other group members that aren't banned as members
+	// make sure to set can_join and can_see appropriately for secret and private rooms
+	group_users, err := queries.GetGroupUsersInfo(db, uint(group_id))
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error getting group users.")
+	}
+	room_users := []models.RoomUser{}
+	can_see := room.RoomTypeID != models.RoomTypeMap["secret"]
+	can_join := room.RoomTypeID == models.RoomTypeMap["public"]
+	for _, group_user := range group_users {
+		// TODO: bug... owner is getting created twice
+		if group_user.GroupRoleID != models.GroupRoleMap["banned"] {
+			room_user := models.RoomUser{
+				RoomID:     room.ID,
+				UserID:     group_user.UserID,
+				RoomRoleID: group_user.GroupRoleID,
+				CanJoin:    can_join,
+				CanSee:     can_see,
+			}
+			room_users = append(room_users, room_user)
+		}
+	}
+	if len(room_users) > 0 {
+		query = db.Create(&room_users)
+		if query.RowsAffected == 0 {
+			return fiber.NewError(fiber.StatusInternalServerError, "Error creating room users.")
+		}
+	}
+
+	// return response
+	response := &CreateRoomResponse{
+		Success: true,
+		Room:    *room,
+	}
+	return c.JSON(response)
+}
+
+// TODO:
+// - when a user is added to a group, add them to all public rooms
+// - allow non-admin users to add themselves to a group using an invite code

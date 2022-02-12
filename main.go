@@ -62,6 +62,8 @@ func setupPrivate(app *fiber.App) {
 
 	private.Get("/groups/:group_id/invites/:invite_id", routes.GetGroupInvite)
 	private.Delete("/groups/:group_id/invites/:invite_id", routes.DeleteGroupInvite)
+
+	private.Post("/groups/:group_id/rooms", routes.CreateRoom)
 }
 
 func main() {
