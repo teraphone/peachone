@@ -120,3 +120,39 @@ func AddUserToGroupAndRooms(db *gorm.DB, user_id uint, group_id uint) error {
 
 	return nil
 }
+
+func ValidateGroupInviteCode(db *gorm.DB, group_id uint, invite_code string) (bool, *models.GroupInvite, error) {
+	is_valid := false
+	group_invite := &models.GroupInvite{}
+	if invite_code != "" {
+		query := db.Where("code = ? AND group_id = ? AND invite_status_id = ?",
+			invite_code, group_id, models.InviteStatusMap["pending"]).Find(group_invite)
+		if query.RowsAffected == 0 {
+			return is_valid, group_invite, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
+		}
+		is_valid = true
+	}
+
+	return is_valid, group_invite, nil
+}
+
+func AcceptInviteAndCreateReferral(db *gorm.DB, group_invite *models.GroupInvite, user_id uint) error {
+	// set invite status to accepted
+	group_invite.InviteStatusID = models.InviteStatusMap["accepted"]
+	tx := db.Model(group_invite).Update("invite_status_id", models.InviteStatusMap["accepted"])
+	if tx.Error != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error updating invite status.")
+	}
+
+	// create referral
+	referral := &models.Referral{
+		UserID:     user_id,
+		ReferrerID: group_invite.ReferrerID,
+	}
+	tx = db.Create(referral)
+	if tx.Error != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating referral.")
+	}
+
+	return nil
+}
