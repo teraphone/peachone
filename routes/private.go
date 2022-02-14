@@ -311,14 +311,6 @@ func DeleteGroup(c *fiber.Ctx) error {
 // -----------------------------------------------------------------------------
 // Create group user
 // -----------------------------------------------------------------------------
-type GroupUserInfo struct {
-	UserID      uint      `json:"user_id"`
-	Name        string    `json:"name"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	GroupRoleID uint      `json:"group_role_id"`
-}
-
 type CreateGroupUserRequest struct {
 	UserID     uint   `json:"user_id"`
 	InviteCode string `json:"invite_code"`
@@ -358,9 +350,12 @@ func CreateGroupUser(c *fiber.Ctx) error {
 	}
 
 	// check invite_code
-	valid_invite_code, group_invite, err := queries.ValidateGroupInviteCode(db, uint(group_id), req.InviteCode)
+	valid_invite_code := false
+	group_invite, err := queries.ValidateGroupInviteCode(db, uint(group_id), req.InviteCode)
 	if err != nil {
 		return err
+	} else {
+		valid_invite_code = true
 	}
 
 	if !valid_invite_code {
@@ -1110,6 +1105,76 @@ func CreateRoom(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
+// -----------------------------------------------------------------------------
+// Accept group invite
+// -----------------------------------------------------------------------------
+type AcceptGroupInviteRequest struct {
+	InviteCode string `json:"invite_code"`
+}
+
+type AcceptGroupInviteResponse struct {
+	Success       bool                  `json:"success"`
+	GroupUserInfo queries.GroupUserInfo `json:"group_user_info"`
+	Group         models.Group          `json:"group"`
+}
+
+func AcceptGroupInvite(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// validate request body
+	req := &AcceptGroupInviteRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// validate invite code
+	group_invite, err := queries.ValidateGroupInviteCode(db, 0, req.InviteCode)
+	if err != nil {
+		return err
+	}
+
+	// add user to group and rooms
+	err = queries.AddUserToGroupAndRooms(db, id, group_invite.GroupID)
+	if err != nil {
+		return err
+	}
+
+	// accept invite, create referral
+	err = queries.AcceptInviteAndCreateReferral(db, group_invite, id)
+	if err != nil {
+		return err
+	}
+
+	// get group
+	group := &models.Group{}
+	query := db.Where("id = ?", group_invite.GroupID).Find(group)
+	if query.Error != nil {
+		return query.Error
+	}
+
+	// get group_user_info
+	group_user_info, err := queries.GetGroupUserInfo(db, group_invite.GroupID, id)
+	if err != nil {
+		return err
+	}
+
+	// return response
+	response := &AcceptGroupInviteResponse{
+		Success:       true,
+		GroupUserInfo: *group_user_info,
+		Group:         *group,
+	}
+	return c.JSON(response)
+
+}
+
 // TODO:
-// - add invite_code to user signup, automatically add to group and rooms
+// - add endpoint to accept invite codes
 // - when a group user is banned, update their room_user roles and can_join/can_see

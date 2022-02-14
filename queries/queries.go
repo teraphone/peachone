@@ -121,19 +121,29 @@ func AddUserToGroupAndRooms(db *gorm.DB, user_id uint, group_id uint) error {
 	return nil
 }
 
-func ValidateGroupInviteCode(db *gorm.DB, group_id uint, invite_code string) (bool, *models.GroupInvite, error) {
-	is_valid := false
+func ValidateGroupInviteCode(db *gorm.DB, group_id uint, invite_code string) (*models.GroupInvite, error) {
 	group_invite := &models.GroupInvite{}
 	if invite_code != "" {
-		query := db.Where("code = ? AND group_id = ? AND invite_status_id = ?",
-			invite_code, group_id, models.InviteStatusMap["pending"]).Find(group_invite)
-		if query.RowsAffected == 0 {
-			return is_valid, group_invite, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
+
+		if group_id != 0 {
+			query := db.Where("code = ? AND group_id = ? AND invite_status_id = ?",
+				invite_code, group_id, models.InviteStatusMap["pending"]).Find(group_invite)
+			if query.RowsAffected == 0 {
+				return group_invite, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
+			}
+		} else {
+			query := db.Where("code = ? AND invite_status_id = ?",
+				invite_code, models.InviteStatusMap["pending"]).Find(group_invite)
+			if query.RowsAffected == 0 {
+				return group_invite, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
+			}
 		}
-		is_valid = true
+
+	} else {
+		return group_invite, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
 	}
 
-	return is_valid, group_invite, nil
+	return group_invite, nil
 }
 
 func AcceptInviteAndCreateReferral(db *gorm.DB, group_invite *models.GroupInvite, user_id uint) error {
@@ -144,15 +154,19 @@ func AcceptInviteAndCreateReferral(db *gorm.DB, group_invite *models.GroupInvite
 		return fiber.NewError(fiber.StatusInternalServerError, "Error updating invite status.")
 	}
 
-	// create referral
+	// check if referral exists. if not, create one
 	referral := &models.Referral{
 		UserID:     user_id,
 		ReferrerID: group_invite.ReferrerID,
 	}
-	tx = db.Create(referral)
-	if tx.Error != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error creating referral.")
+	query := db.Where("user_id = ? AND referrer_id = ?", user_id, group_invite.ReferrerID).Find(referral)
+	if query.RowsAffected == 0 {
+		tx = db.Create(referral)
+		if tx.Error != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, "Error creating referral.")
+		}
 	}
+	// if referrer_id previously invited user_id to any group, then we already have the referral.
 
 	return nil
 }
