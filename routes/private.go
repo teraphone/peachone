@@ -716,9 +716,28 @@ func DeleteGroupUser(c *fiber.Ctx) error {
 	}
 
 	// delete user
-	db.Delete(target_group_user)
+	tx := db.Delete(target_group_user)
+	if tx.Error != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error deleting user from group.")
+	}
 
-	// TODO: also delete room_user entries for user and group
+	// also delete room_user entries for user_id in group_id
+	rooms := []models.Room{}
+	query = db.Where("group_id = ?", group_id).Find(&rooms)
+	if query.RowsAffected != 0 {
+		room_users := []models.RoomUser{}
+		for _, room := range rooms {
+			room_user := models.RoomUser{
+				RoomID: room.ID,
+				UserID: uint(user_id),
+			}
+			room_users = append(room_users, room_user)
+		}
+		tx = db.Delete(&room_users)
+		if tx.Error != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, "Error deleting room_user entries for user_id in group_id.")
+		}
+	}
 
 	// return response
 	response := &DeleteGroupUserResponse{
