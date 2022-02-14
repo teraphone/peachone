@@ -359,9 +359,9 @@ func CreateGroupUser(c *fiber.Ctx) error {
 
 	// check invite_code
 	valid_invite_code := false
+	group_invite := &models.GroupInvite{}
 	if req.InviteCode != "" {
-		group_invite := &models.GroupInvite{}
-		query := db.Where("code = ? AND group_id = ? AND invite_status = ?",
+		query := db.Where("code = ? AND group_id = ? AND invite_status_id = ?",
 			req.InviteCode, group_id, models.InviteStatusMap["pending"]).Find(group_invite)
 		if query.RowsAffected == 0 {
 			return fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
@@ -383,12 +383,30 @@ func CreateGroupUser(c *fiber.Ctx) error {
 		}
 	}
 
+	// add user to group. also add user to rooms in group.
 	err = queries.AddUserToGroupAndRooms(db, req.UserID, uint(group_id))
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error adding user to group.")
 	}
 
-	// TODO: set invite status to "accepted"
+	if valid_invite_code {
+		// set invite status to accepted
+		group_invite.InviteStatusID = models.InviteStatusMap["accepted"]
+		tx := db.Model(group_invite).Update("invite_status_id", models.InviteStatusMap["accepted"])
+		if tx.Error != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, "Error updating invite status.")
+		}
+
+		// create referral
+		referral := &models.Referral{
+			UserID:     req.UserID,
+			ReferrerID: group_invite.ReferrerID,
+		}
+		tx = db.Create(referral)
+		if tx.Error != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, "Error creating referral.")
+		}
+	}
 
 	// get group_user_info
 	group_user_info, err := queries.GetGroupUserInfo(db, uint(group_id), req.UserID)

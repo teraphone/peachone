@@ -72,15 +72,22 @@ func GetGroupUserRoleCount(db *gorm.DB, group_id uint, group_role_id uint) (*Gro
 }
 
 func AddUserToGroupAndRooms(db *gorm.DB, user_id uint, group_id uint) error {
+	// verify user exists
+	user := &models.User{}
+	query := db.Where("id = ?", user_id).Find(user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid user_id.")
+	}
+
 	// verify new user is not already in group
 	new_group_user := &models.GroupUser{
 		GroupID:     group_id,
 		UserID:      user_id,
 		GroupRoleID: models.GroupRoleMap["member"],
 	}
-	query := db.Where("user_id = ? AND group_id = ?", user_id, group_id).Find(new_group_user)
+	query = db.Where("user_id = ? AND group_id = ?", user_id, group_id).Find(new_group_user)
 	if query.RowsAffected != 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "User is already in this group.")
+		return fiber.NewError(fiber.StatusBadRequest, "user_id is already in this group.")
 	}
 
 	// create new group user
