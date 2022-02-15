@@ -1500,6 +1500,125 @@ func GetRoomUser(c *fiber.Ctx) error {
 }
 
 // -----------------------------------------------------------------------------
+// Update room user
+// -----------------------------------------------------------------------------
+type UpdateRoomUserRequest struct {
+	RoomRoleID uint `json:"room_role_id"`
+	CanSee     bool `json:"can_see"`
+	CanJoin    bool `json:"can_join"`
+}
+
+type UpdateRoomUserResponse struct {
+	Success  bool                 `json:"success"`
+	RoomUser queries.RoomUserInfo `json:"room_user"`
+}
+
+func UpdateRoomUser(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get room_id from request
+	room_id_str := c.Params("room_id")
+	room_id, err := strconv.ParseUint(room_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
+	}
+
+	// get user_id from request
+	user_id_str := c.Params("user_id")
+	user_id, err := strconv.ParseUint(user_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid user id.")
+	}
+
+	// get request body
+	req := &UpdateRoomUserRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body.")
+	}
+
+	// validate request body
+	if req.RoomRoleID < 1 || req.RoomRoleID > 6 {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room_role_id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's rooms.")
+	}
+
+	// verify user has moderator, admin, or owner role in room
+	room_user := &models.RoomUser{}
+	query = db.Where("user_id = ? AND room_id = ?", id, room_id).Find(room_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this room.")
+	}
+	if room_user.RoomRoleID < 4 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to update this room user.")
+	}
+
+	// get target room user
+	target_room_user := &models.RoomUser{}
+	query = db.Where("user_id = ? AND room_id = ?", user_id, room_id).Find(target_room_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "Room user not found.")
+	}
+
+	// can only update target room user if you outrank them or are room owner
+	if target_room_user.RoomRoleID >= room_user.RoomRoleID && room_user.RoomRoleID != models.RoomRoleMap["owner"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to update this room user.")
+	}
+
+	// cannot update target room user role beyond your own role
+	if req.RoomRoleID > room_user.RoomRoleID {
+		return fiber.NewError(fiber.StatusUnauthorized, "You cannot promote user_id beyond your own role.")
+	}
+
+	// cannot demote yourself
+	if req.RoomRoleID < room_user.RoomRoleID && id == uint(user_id) {
+		return fiber.NewError(fiber.StatusUnauthorized, "You cannot demote yourself.")
+	}
+
+	// update room user
+	tx := db.Model(target_room_user).Updates(models.RoomUser{
+		RoomRoleID: req.RoomRoleID,
+		CanSee:     req.CanSee,
+		CanJoin:    req.CanJoin,
+	})
+	if tx.Error != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error updating room user.")
+	}
+
+	// get room user info
+	room_user_info, err := queries.GetRoomUserInfo(db, uint(room_id), uint(user_id))
+	if err != nil {
+		return err
+	}
+
+	// return response
+	response := &UpdateRoomUserResponse{
+		Success:  true,
+		RoomUser: *room_user_info,
+	}
+	return c.JSON(response)
+}
+
+// -----------------------------------------------------------------------------
 // Accept group invite
 // -----------------------------------------------------------------------------
 type AcceptGroupInviteRequest struct {

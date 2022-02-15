@@ -73,6 +73,7 @@ func setupPrivate(app *fiber.App) {
 	private.Get("/groups/:group_id/rooms/:room_id/users", routes.GetRoomUsers)
 
 	private.Get("/groups/:group_id/rooms/:room_id/users/:user_id", routes.GetRoomUser)
+	private.Patch("/groups/:group_id/rooms/:room_id/users/:user_id", routes.UpdateRoomUser)
 
 	// Invites endpoints
 	private.Post("/invites", routes.AcceptGroupInvite)
