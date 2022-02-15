@@ -1292,6 +1292,91 @@ func DeleteRoom(c *fiber.Ctx) error {
 }
 
 // -----------------------------------------------------------------------------
+// Update room
+// -----------------------------------------------------------------------------
+type UpdateRoomRequest struct {
+	Name string `json:"name"`
+}
+
+type UpdateRoomResponse struct {
+	Success bool        `json:"success"`
+	Room    models.Room `json:"room"`
+}
+
+func UpdateRoom(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get room_id from request
+	room_id_str := c.Params("room_id")
+	room_id, err := strconv.ParseUint(room_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
+	}
+
+	// get request body
+	req := new(UpdateRoomRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.Name == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room name.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's rooms.")
+	}
+
+	// verify group_user is admin or owner
+	if group_user.GroupRoleID != models.GroupRoleMap["admin"] && group_user.GroupRoleID != models.GroupRoleMap["owner"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to update this room.")
+	}
+
+	// get room
+	room := &models.Room{}
+	query = db.Where("id = ?", room_id).Find(room)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusNotFound, "Room not found.")
+	}
+
+	// verify room is in group
+	if room.GroupID != uint(group_id) {
+		return fiber.NewError(fiber.StatusUnauthorized, "Room not found.")
+	}
+
+	// update room
+	tx := db.Model(room).Update("name", req.Name)
+	if tx.Error != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error updating room.")
+	}
+
+	// return response
+	response := &UpdateRoomResponse{
+		Success: true,
+		Room:    *room,
+	}
+	return c.JSON(response)
+}
+
+// -----------------------------------------------------------------------------
 // Accept group invite
 // -----------------------------------------------------------------------------
 type AcceptGroupInviteRequest struct {
