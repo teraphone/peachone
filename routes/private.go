@@ -1435,6 +1435,71 @@ func GetRoomUsers(c *fiber.Ctx) error {
 }
 
 // -----------------------------------------------------------------------------
+// Get room user
+// -----------------------------------------------------------------------------
+type GetRoomUserResponse struct {
+	Success  bool                 `json:"success"`
+	RoomUser queries.RoomUserInfo `json:"room_user"`
+}
+
+func GetRoomUser(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get room_id from request
+	room_id_str := c.Params("room_id")
+	room_id, err := strconv.ParseUint(room_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
+	}
+
+	// get user_id from request
+	user_id_str := c.Params("user_id")
+	user_id, err := strconv.ParseUint(user_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid user id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's rooms.")
+	}
+
+	// verify group_user is not banned
+	if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this group.")
+	}
+
+	// get room user's info
+	room_user_info, err := queries.GetRoomUserInfo(db, uint(room_id), uint(user_id))
+	if err != nil {
+		return err
+	}
+
+	// return response
+	response := &GetRoomUserResponse{
+		Success:  true,
+		RoomUser: *room_user_info,
+	}
+	return c.JSON(response)
+}
+
+// -----------------------------------------------------------------------------
 // Accept group invite
 // -----------------------------------------------------------------------------
 type AcceptGroupInviteRequest struct {
