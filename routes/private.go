@@ -1377,6 +1377,64 @@ func UpdateRoom(c *fiber.Ctx) error {
 }
 
 // -----------------------------------------------------------------------------
+// Get room users
+// -----------------------------------------------------------------------------
+type GetRoomUsersResponse struct {
+	Success   bool                   `json:"success"`
+	RoomUsers []queries.RoomUserInfo `json:"room_users"`
+}
+
+func GetRoomUsers(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get room_id from request
+	room_id_str := c.Params("room_id")
+	room_id, err := strconv.ParseUint(room_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's rooms.")
+	}
+
+	// verify group_user is not banned
+	if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this group.")
+	}
+
+	// get room users' info
+	room_users_info, err := queries.GetRoomUsersInfo(db, uint(room_id))
+	if err != nil {
+		return err
+	}
+
+	// return response
+	response := &GetRoomUsersResponse{
+		Success:   true,
+		RoomUsers: room_users_info,
+	}
+	return c.JSON(response)
+}
+
+// -----------------------------------------------------------------------------
 // Accept group invite
 // -----------------------------------------------------------------------------
 type AcceptGroupInviteRequest struct {
@@ -1449,3 +1507,4 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 // TODO:
 // - when a group user is banned, update their room_user roles and can_join/can_see
 // - when a room is deleted, drop it from the voice server
+// - store data in UTC time
