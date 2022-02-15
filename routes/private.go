@@ -1228,6 +1228,70 @@ func GetRoom(c *fiber.Ctx) error {
 }
 
 // -----------------------------------------------------------------------------
+// Delete room
+// -----------------------------------------------------------------------------
+type DeleteRoomResponse struct {
+	Success bool `json:"success"`
+}
+
+func DeleteRoom(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get room_id from request
+	room_id_str := c.Params("room_id")
+	room_id, err := strconv.ParseUint(room_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group's rooms.")
+	}
+
+	// verify group_user is admin or owner
+	if group_user.GroupRoleID != models.GroupRoleMap["admin"] && group_user.GroupRoleID != models.GroupRoleMap["owner"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to delete this room.")
+	}
+
+	// verify user is in room
+	room_user := &models.RoomUser{}
+	query = db.Where("user_id = ? AND room_id = ?", id, room_id).Find(room_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to delete this room.")
+	}
+
+	// delete room
+	tx := db.Delete(&models.Room{}, room_id)
+	if tx.Error != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error deleting room.")
+	}
+
+	// return response
+	response := &DeleteRoomResponse{
+		Success: true,
+	}
+	return c.JSON(response)
+
+}
+
+// -----------------------------------------------------------------------------
 // Accept group invite
 // -----------------------------------------------------------------------------
 type AcceptGroupInviteRequest struct {
@@ -1299,3 +1363,4 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 
 // TODO:
 // - when a group user is banned, update their room_user roles and can_join/can_see
+// - when a room is deleted, drop it from the voice server
