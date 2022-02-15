@@ -170,3 +170,19 @@ func AcceptInviteAndCreateReferral(db *gorm.DB, group_invite *models.GroupInvite
 
 	return nil
 }
+
+func GetRoomsNotBanned(db *gorm.DB, group_id uint, user_id uint) ([]models.Room, error) {
+	sql_fmt := "SELECT rooms.* " +
+		"FROM rooms " +
+		"JOIN room_users " +
+		"ON room_users.room_id = rooms.id " +
+		"WHERE room_users.user_id = %d AND rooms.group_id = %d AND room_users.room_role_id > %d;"
+	sql := fmt.Sprintf(sql_fmt, user_id, group_id, models.RoomRoleMap["banned"])
+	rooms := []models.Room{}
+	tx := db.Raw(sql).Scan(&rooms)
+	if tx.Error != nil {
+		return nil, fiber.NewError(fiber.StatusNotFound, "Error finding rooms.")
+	}
+
+	return rooms, nil
+}
