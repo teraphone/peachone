@@ -1,8 +1,11 @@
 package routes
 
 import (
+	"fmt"
 	"os"
 	"peachone/models"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -40,4 +43,27 @@ func CreateRoomServiceClient() *lksdk.RoomServiceClient {
 	client := lksdk.NewRoomServiceClient(LIVEKIT_HOST, LIVEKIT_KEY, LIVEKIT_SECRET)
 
 	return client
+}
+
+func EncodeRoomName(group_id uint, room_id uint) string {
+	return strconv.Itoa(int(group_id)) + "/" + strconv.Itoa(int(room_id))
+}
+
+func DecodeRoomName(name string) (uint, uint, error) {
+	split := strings.Split(name, "/")
+	if len(split) != 2 {
+		return 0, 0, fmt.Errorf("invalid room name: %s", name)
+	}
+
+	group_id, err := strconv.Atoi(split[0])
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid group id: %s", split[0])
+	}
+
+	room_id, err := strconv.Atoi(split[1])
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid room id: %s", split[1])
+	}
+
+	return uint(group_id), uint(room_id), nil
 }

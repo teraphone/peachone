@@ -219,3 +219,26 @@ func GetRoomUsersInfo(db *gorm.DB, room_id uint) ([]RoomUserInfo, error) {
 
 	return room_users_info, nil
 }
+
+type UserRoom struct {
+	models.Room
+	RoomRoleID uint `json:"room_role_id"`
+	CanJoin    bool `json:"can_join"`
+	CanSee     bool `json:"can_see"`
+}
+
+func GetUserRooms(db *gorm.DB, user_id uint) ([]UserRoom, error) {
+	sql_fmt := "SELECT rooms.*, room_users.room_role_id, room_users.can_join, room_users.can_see " +
+		"FROM rooms " +
+		"JOIN room_users " +
+		"ON room_users.room_id = rooms.id " +
+		"WHERE room_users.user_id = %d AND room_users.room_role_id > 1;"
+	sql := fmt.Sprintf(sql_fmt, user_id)
+	user_rooms := []UserRoom{}
+	tx := db.Raw(sql).Scan(&user_rooms)
+	if tx.Error != nil {
+		return nil, fiber.NewError(fiber.StatusNotFound, "Error finding user rooms.")
+	}
+
+	return user_rooms, nil
+}

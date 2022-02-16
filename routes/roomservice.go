@@ -3,7 +3,7 @@ package routes
 import (
 	"context"
 	"peachone/database"
-	"peachone/models"
+	"peachone/queries"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -14,8 +14,8 @@ import (
 // Get livekit rooms
 // -----------------------------------------------------------------------------
 type GetLivekitRoomsResponse struct {
-	Success bool `json:"success"`
-	livekit.ListRoomsResponse
+	livekit.ListRoomsResponse      // will be absent if empty
+	Success                   bool `json:"success"`
 }
 
 func GetLivekitRooms(c *fiber.Ctx) error {
@@ -28,28 +28,33 @@ func GetLivekitRooms(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
-	// get room_users for user id
-	room_users := []models.RoomUser{}
-	query := db.Where("user_id = ?", id).Find(&room_users)
-	if query.Error != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error getting room_user records.")
+	// get user rooms
+	user_rooms, err := queries.GetUserRooms(db, uint(id))
+	if err != nil {
+		return err
+	}
+
+	// get list of livekit room names that the user is a member of
+	var livekit_room_names []string
+	for _, user_room := range user_rooms {
+		name := EncodeRoomName(user_room.GroupID, user_room.ID)
+		livekit_room_names = append(livekit_room_names, name)
 	}
 
 	// get roomservice client
 	client := CreateRoomServiceClient()
 
 	// list rooms (only returns "active" rooms)
-	// TODO: only request rooms that the user is in
-	rooms, err := client.ListRooms(context.Background(), &livekit.ListRoomsRequest{})
+	rooms, err := client.ListRooms(context.Background(), &livekit.ListRoomsRequest{
+		Names: livekit_room_names,
+	})
 	if err != nil {
 		return err
 	}
 
-	// return response
 	response := &GetLivekitRoomsResponse{
-		Success:           true,
 		ListRoomsResponse: *rooms,
+		Success:           true,
 	}
 	return c.JSON(response)
-
 }
