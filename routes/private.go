@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"math/rand"
 	"peachone/database"
 	"peachone/models"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	livekit "github.com/livekit/protocol/livekit"
 )
 
 // Private Welcome handler
@@ -985,8 +987,9 @@ type CreateRoomRequest struct {
 }
 
 type CreateRoomResponse struct {
-	Success bool        `json:"success"`
-	Room    models.Room `json:"room"`
+	Success     bool         `json:"success"`
+	Room        models.Room  `json:"room"`
+	LiveKitRoom livekit.Room `json:"livekit_room"`
 }
 
 func CreateRoom(c *fiber.Ctx) error {
@@ -1097,10 +1100,21 @@ func CreateRoom(c *fiber.Ctx) error {
 		}
 	}
 
+	// create livekit room
+	client := CreateRoomServiceClient()
+	lkroom, err := client.CreateRoom(context.Background(), &livekit.CreateRoomRequest{
+		Name:            EncodeRoomName(room.GroupID, room.ID),
+		MaxParticipants: uint32(room.Capacity),
+	})
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating livekit room.")
+	}
+
 	// return response
 	response := &CreateRoomResponse{
-		Success: true,
-		Room:    *room,
+		Success:     true,
+		Room:        *room,
+		LiveKitRoom: *lkroom,
 	}
 	return c.JSON(response)
 }
