@@ -2,22 +2,20 @@ package routes
 
 import (
 	"context"
-	"os"
 	"peachone/database"
 	"peachone/models"
 
 	"github.com/gofiber/fiber/v2"
 
 	livekit "github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go"
 )
 
 // -----------------------------------------------------------------------------
 // Get livekit rooms
 // -----------------------------------------------------------------------------
 type GetLivekitRoomsResponse struct {
-	Success bool                      `json:"success"`
-	Rooms   livekit.ListRoomsResponse `json:"rooms"`
+	Success bool `json:"success"`
+	livekit.ListRoomsResponse
 }
 
 func GetLivekitRooms(c *fiber.Ctx) error {
@@ -30,29 +28,27 @@ func GetLivekitRooms(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
-	// get user's rooms
-	user_rooms := []models.RoomUser{}
-	query := db.Where("user_id = ?", id).Find(&user_rooms)
+	// get room_users for user id
+	room_users := []models.RoomUser{}
+	query := db.Where("user_id = ?", id).Find(&room_users)
 	if query.Error != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error getting user's rooms.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Error getting room_user records.")
 	}
 
-	LIVEKIT_KEY := os.Getenv("LIVEKIT_KEY")
-	LIVEKIT_SECRET := os.Getenv("LIVEKIT_SECRET")
-	LIVEKIT_HOST := os.Getenv("LIVEKIT_HOST")
+	// get roomservice client
+	client := CreateRoomServiceClient()
 
-	roomClient := lksdk.NewRoomServiceClient(LIVEKIT_HOST, LIVEKIT_KEY, LIVEKIT_SECRET)
-
-	// list rooms
-	rooms, err := roomClient.ListRooms(context.Background(), &livekit.ListRoomsRequest{})
+	// list rooms (only returns "active" rooms)
+	// TODO: only request rooms that the user is in
+	rooms, err := client.ListRooms(context.Background(), &livekit.ListRoomsRequest{})
 	if err != nil {
 		return err
 	}
 
 	// return response
 	response := &GetLivekitRoomsResponse{
-		Success: true,
-		Rooms:   *rooms,
+		Success:           true,
+		ListRoomsResponse: *rooms,
 	}
 	return c.JSON(response)
 

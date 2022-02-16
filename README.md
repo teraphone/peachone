@@ -141,10 +141,10 @@ DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" D
 - GET: return a list of rooms that are active
 - POST: start a room if it's inactive
 
-/rooms/id
+/rooms/:group_id/:room_id 
 - GET: return list of room participants
 - PATCH: (requires room admin) room moderation (kick/mute/unmute)
 - DELETE: (requires room admin) drop all participants and terminate the room
 
-/rooms/id/join
+/rooms/:group_id/:room_id/join
 - GET: returns the join token for the room

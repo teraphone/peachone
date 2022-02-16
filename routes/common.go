@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 func getIDFromJWT(c *fiber.Ctx) (uint, error) {
@@ -29,4 +30,14 @@ func createJWTToken(user *models.User) (string, int64, error) {
 	}
 
 	return tokenString, expiration, nil
+}
+
+func CreateRoomServiceClient() *lksdk.RoomServiceClient {
+	LIVEKIT_KEY := os.Getenv("LIVEKIT_KEY")
+	LIVEKIT_SECRET := os.Getenv("LIVEKIT_SECRET")
+	LIVEKIT_HOST := os.Getenv("LIVEKIT_HOST")
+
+	client := lksdk.NewRoomServiceClient(LIVEKIT_HOST, LIVEKIT_KEY, LIVEKIT_SECRET)
+
+	return client
 }
