@@ -15,6 +15,7 @@ import (
 func setupRoutes(app *fiber.App) {
 	setupPublic(app)
 	setupPrivate(app)
+	setupRoomService(app)
 
 }
 
@@ -77,6 +78,19 @@ func setupPrivate(app *fiber.App) {
 
 	// Invites endpoints
 	private.Post("/invites", routes.AcceptGroupInvite)
+
+}
+
+func setupRoomService(app *fiber.App) {
+	roomservice := app.Group("/v1/roomservice")
+	SIGNING_KEY := os.Getenv("SIGNING_KEY")
+	roomservice.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte(SIGNING_KEY),
+	}))
+
+	// Rooms endpoints
+	roomservice.Get("/rooms", routes.GetLivekitRooms)
+
 }
 
 func main() {
