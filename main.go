@@ -91,6 +91,7 @@ func setupRoomService(app *fiber.App) {
 	// Rooms endpoints
 	roomservice.Get("/rooms", routes.GetLivekitRooms)
 	roomservice.Get("/rooms/:group_id/:room_id/join", routes.JoinLiveKitRoom)
+	roomservice.Get("/rooms/:group_id/:room_id", routes.GetLiveKitRoomParticipants)
 
 }
 

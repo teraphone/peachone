@@ -153,3 +153,78 @@ func JoinLiveKitRoom(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
+
+// -----------------------------------------------------------------------------
+// Get livekit room participants
+// -----------------------------------------------------------------------------
+type GetLiveKitRoomParticipantsResponse struct {
+	livekit.ListParticipantsResponse
+	Success bool `json:"success"`
+}
+
+func GetLiveKitRoomParticipants(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get room_id from request
+	room_id_str := c.Params("room_id")
+	room_id, err := strconv.ParseUint(room_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("group_id = ? AND user_id = ?", group_id, id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// verify user is not banned
+	if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this group.")
+	}
+
+	// verify user is in room
+	room_user := &models.RoomUser{}
+	query = db.Where("room_id = ? AND user_id = ?", room_id, id).Find(room_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this room.")
+	}
+
+	// verify user is not banned
+	if room_user.RoomRoleID == models.RoomRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this room.")
+	}
+
+	// get roomservice client
+	client := CreateRoomServiceClient()
+
+	// get room participants
+	participants, err := client.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
+		Room: EncodeRoomName(uint(group_id), uint(room_id)),
+	})
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error getting room participants.")
+	}
+
+	// return response
+	response := &GetLiveKitRoomParticipantsResponse{
+		ListParticipantsResponse: *participants,
+		Success:                  true,
+	}
+	return c.JSON(response)
+}
