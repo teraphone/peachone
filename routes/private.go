@@ -1703,6 +1703,8 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 }
 
 // TODO:
-// - when a group user is banned, update their room_user roles and can_join/can_see
-// - when a room is deleted, drop it from the voice server
+// - when a group user is banned,
+// -- update their room_user roles and can_join/can_see,
+// -- and drop them from any livekit rooms
+// - when a room is deleted, delete the livekit room
 // - store data in UTC time

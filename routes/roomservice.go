@@ -2,11 +2,16 @@ package routes
 
 import (
 	"context"
+	"os"
 	"peachone/database"
+	"peachone/models"
 	"peachone/queries"
+	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
+	"github.com/livekit/protocol/auth"
 	livekit "github.com/livekit/protocol/livekit"
 )
 
@@ -57,4 +62,94 @@ func GetLivekitRooms(c *fiber.Ctx) error {
 		Success:           true,
 	}
 	return c.JSON(response)
+}
+
+// -----------------------------------------------------------------------------
+// Join livekit room
+// -----------------------------------------------------------------------------
+type JoinLiveKitRoomResponse struct {
+	Success bool   `json:"success"`
+	Token   string `json:"token"`
+}
+
+func JoinLiveKitRoom(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, _ := getIDFromJWT(c)
+
+	// get group_id from request
+	group_id_str := c.Params("group_id")
+	group_id, err := strconv.ParseUint(group_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid group id.")
+	}
+
+	// get room_id from request
+	room_id_str := c.Params("room_id")
+	room_id, err := strconv.ParseUint(room_id_str, 10, 64)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
+	}
+
+	// create database connection
+	db, err := database.CreateDBConnection()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
+	}
+
+	// verify user is in group
+	group_user := &models.GroupUser{}
+	query := db.Where("group_id = ? AND user_id = ?", group_id, id).Find(group_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
+	}
+
+	// verify user is not banned
+	if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this group.")
+	}
+
+	// verify user is in room
+	room_user := &models.RoomUser{}
+	query = db.Where("room_id = ? AND user_id = ?", room_id, id).Find(room_user)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this room.")
+	}
+
+	// verify user is not banned
+	if room_user.RoomRoleID == models.RoomRoleMap["banned"] {
+		return fiber.NewError(fiber.StatusUnauthorized, "You are banned from this room.")
+	}
+
+	// construct access token
+	LIVEKIT_KEY := os.Getenv("LIVEKIT_KEY")
+	LIVEKIT_SECRET := os.Getenv("LIVEKIT_SECRET")
+	at := auth.NewAccessToken(LIVEKIT_KEY, LIVEKIT_SECRET)
+	grant := &auth.VideoGrant{
+		RoomCreate: false,
+		RoomList:   false,
+		RoomRecord: false,
+
+		RoomAdmin: room_user.RoomRoleID > models.RoomRoleMap["member"],
+		RoomJoin:  room_user.CanJoin,
+		Room:      EncodeRoomName(uint(group_id), uint(room_id)),
+
+		CanPublish:   &room_user.CanJoin,
+		CanSubscribe: &room_user.CanJoin,
+	}
+	at.AddGrant(grant).
+		SetIdentity(strconv.Itoa(int(id))).
+		SetValidFor(730 * time.Hour)
+
+	token, err := at.ToJWT()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error generating access token.")
+	}
+
+	// return response
+	response := &JoinLiveKitRoomResponse{
+		Success: true,
+		Token:   token,
+	}
+	return c.JSON(response)
+
 }

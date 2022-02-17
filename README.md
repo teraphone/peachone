@@ -139,12 +139,12 @@ DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" D
 ## /v1/roomservice (interacting with voice chat server)
 /rooms
 - GET: return a list of rooms that are active
-- POST: start a room if it's inactive
+- POST: start a room if it's inactive (this appears to be unnecessary)
 
 /rooms/:group_id/:room_id 
 - GET: return list of room participants
-- PATCH: (requires room admin) room moderation (kick/mute/unmute)
-- DELETE: (requires room admin) drop all participants and terminate the room
+- PATCH: (requires room admin) room moderation (kick, or room-wide mute/unmute) (is this necessary? do through desktop client instead?)
+- DELETE: (requires room admin) drop all participants and terminate the room (probably don't need this)
 
 /rooms/:group_id/:room_id/join
 - GET: returns the join token for the room
