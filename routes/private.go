@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"context"
 	"math/rand"
 	"peachone/database"
 	"peachone/models"
@@ -63,7 +62,7 @@ func CreateGroup(c *fiber.Ctx) error {
 	id, _ := getIDFromJWT(c)
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -98,6 +97,7 @@ func CreateGroup(c *fiber.Ctx) error {
 		Group:   *group,
 	}
 	return c.JSON(response)
+
 }
 
 // -----------------------------------------------------------------------------
@@ -113,7 +113,7 @@ func GetGroups(c *fiber.Ctx) error {
 	id, _ := getIDFromJWT(c)
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -158,7 +158,7 @@ func GetGroup(c *fiber.Ctx) error {
 	group_id := c.Params("group_id")
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -223,7 +223,7 @@ func UpdateGroup(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -283,7 +283,7 @@ func DeleteGroup(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -346,12 +346,13 @@ func CreateGroupUser(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
 
 	// check invite_code
+	// TODO: double check this logic and ValidateGroupInviteCode logic
 	valid_invite_code := false
 	group_invite, err := queries.ValidateGroupInviteCode(db, uint(group_id), req.InviteCode)
 	if err != nil {
@@ -423,7 +424,7 @@ func GetGroupUsers(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -481,7 +482,7 @@ func GetGroupUser(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -559,7 +560,7 @@ func UpdateGroupUser(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -639,7 +640,7 @@ func DeleteGroupUser(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -746,7 +747,7 @@ func CreateGroupInvite(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -818,7 +819,7 @@ func GetGroupInvites(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -881,7 +882,7 @@ func GetGroupInvite(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -940,7 +941,7 @@ func DeleteGroupInvite(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -993,6 +994,7 @@ type CreateRoomResponse struct {
 }
 
 func CreateRoom(c *fiber.Ctx) error {
+
 	// extract user id from JWT claims
 	id, _ := getIDFromJWT(c)
 
@@ -1004,10 +1006,11 @@ func CreateRoom(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
+	db.WithContext(c.Context())
 
 	// verify user is in group
 	group_user := &models.GroupUser{}
@@ -1078,20 +1081,22 @@ func CreateRoom(c *fiber.Ctx) error {
 	can_see := room.RoomTypeID != models.RoomTypeMap["secret"]
 	can_join := room.RoomTypeID == models.RoomTypeMap["public"]
 	for _, group_user := range group_users {
-		if group_user.GroupRoleID != models.GroupRoleMap["banned"] {
-			if group_user.UserID == id {
-				room_users = append(room_users, *room_owner)
-			} else {
-				room_user := &models.RoomUser{
-					RoomID:     room.ID,
-					UserID:     group_user.UserID,
-					RoomRoleID: group_user.GroupRoleID,
-					CanJoin:    can_join,
-					CanSee:     can_see,
-				}
-				room_users = append(room_users, *room_user)
-			}
+		if group_user.GroupRoleID == models.GroupRoleMap["banned"] {
+			continue
 		}
+		if group_user.UserID == id {
+			room_users = append(room_users, *room_owner)
+		} else {
+			room_user := &models.RoomUser{
+				RoomID:     room.ID,
+				UserID:     group_user.UserID,
+				RoomRoleID: group_user.GroupRoleID,
+				CanJoin:    can_join,
+				CanSee:     can_see,
+			}
+			room_users = append(room_users, *room_user)
+		}
+
 	}
 	if len(room_users) > 0 {
 		query = db.Create(&room_users)
@@ -1102,7 +1107,7 @@ func CreateRoom(c *fiber.Ctx) error {
 
 	// create livekit room
 	client := CreateRoomServiceClient()
-	lkroom, err := client.CreateRoom(context.Background(), &livekit.CreateRoomRequest{
+	lkroom, err := client.CreateRoom(c.Context(), &livekit.CreateRoomRequest{
 		Name:            EncodeRoomName(room.GroupID, room.ID),
 		MaxParticipants: uint32(room.Capacity),
 	})
@@ -1139,7 +1144,7 @@ func GetRooms(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -1197,7 +1202,7 @@ func GetRoom(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -1267,7 +1272,7 @@ func DeleteRoom(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -1347,7 +1352,7 @@ func UpdateRoom(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -1417,7 +1422,7 @@ func GetRoomUsers(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -1482,7 +1487,7 @@ func GetRoomUser(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -1564,7 +1569,7 @@ func UpdateRoomUser(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -1656,7 +1661,7 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -1708,3 +1713,5 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 // -- and drop them from any livekit rooms
 // - when a room is deleted, delete the livekit room
 // - store data in UTC time
+// - getIDFromJWT needs error checking
+// - creating a user with an invite code needs a closer look

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -99,7 +100,7 @@ func main() {
 	// Optionally automigrate at startup
 	DB_AUTOMIGRATE := os.Getenv("DB_AUTOMIGRATE")
 	if DB_AUTOMIGRATE == "true" {
-		_, err := database.CreateDBConnection()
+		_, err := database.CreateDBConnection(context.Background())
 		if err != nil {
 			panic(err)
 		}

@@ -119,24 +119,22 @@ func AddUserToGroupAndRooms(db *gorm.DB, user_id uint, group_id uint) error {
 
 func ValidateGroupInviteCode(db *gorm.DB, group_id uint, invite_code string) (*models.GroupInvite, error) {
 	group_invite := &models.GroupInvite{}
-	if invite_code != "" {
+	if invite_code == "" {
+		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
+	}
 
-		if group_id != 0 {
-			query := db.Where("code = ? AND group_id = ? AND invite_status_id = ?",
-				invite_code, group_id, models.InviteStatusMap["pending"]).Find(group_invite)
-			if query.RowsAffected == 0 {
-				return group_invite, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
-			}
-		} else {
-			query := db.Where("code = ? AND invite_status_id = ?",
-				invite_code, models.InviteStatusMap["pending"]).Find(group_invite)
-			if query.RowsAffected == 0 {
-				return group_invite, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
-			}
+	if group_id != 0 {
+		query := db.Where("code = ? AND group_id = ? AND invite_status_id = ?",
+			invite_code, group_id, models.InviteStatusMap["pending"]).Find(group_invite)
+		if query.RowsAffected == 0 {
+			return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
 		}
-
 	} else {
-		return group_invite, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
+		query := db.Where("code = ? AND invite_status_id = ?",
+			invite_code, models.InviteStatusMap["pending"]).Find(group_invite)
+		if query.RowsAffected == 0 {
+			return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid invite_code.")
+		}
 	}
 
 	return group_invite, nil

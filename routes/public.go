@@ -42,7 +42,7 @@ func Signup(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -111,7 +111,7 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}

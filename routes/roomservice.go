@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"context"
 	"os"
 	"peachone/database"
 	"peachone/models"
@@ -28,7 +27,7 @@ func GetLivekitRooms(c *fiber.Ctx) error {
 	id, _ := getIDFromJWT(c)
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -50,7 +49,7 @@ func GetLivekitRooms(c *fiber.Ctx) error {
 	client := CreateRoomServiceClient()
 
 	// list rooms (only returns "active" rooms)
-	rooms, err := client.ListRooms(context.Background(), &livekit.ListRoomsRequest{
+	rooms, err := client.ListRooms(c.Context(), &livekit.ListRoomsRequest{
 		Names: livekit_room_names,
 	})
 	if err != nil {
@@ -91,7 +90,7 @@ func JoinLiveKitRoom(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -181,7 +180,7 @@ func GetLiveKitRoomParticipants(c *fiber.Ctx) error {
 	}
 
 	// create database connection
-	db, err := database.CreateDBConnection()
+	db, err := database.CreateDBConnection(c.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
 	}
@@ -214,7 +213,7 @@ func GetLiveKitRoomParticipants(c *fiber.Ctx) error {
 	client := CreateRoomServiceClient()
 
 	// get room participants
-	participants, err := client.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
+	participants, err := client.ListParticipants(c.Context(), &livekit.ListParticipantsRequest{
 		Room: EncodeRoomName(uint(group_id), uint(room_id)),
 	})
 	if err != nil {

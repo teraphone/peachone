@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -140,7 +141,7 @@ func InitDBTables(db *gorm.DB) {
 
 }
 
-func CreateDBConnection() (*gorm.DB, error) {
+func CreateDBConnection(ctx context.Context) (*gorm.DB, error) {
 	// get environment variables for db connection
 	DB_HOST := os.Getenv("DB_HOST")
 	DB_USER := os.Getenv("DB_USER")
@@ -172,5 +173,5 @@ func CreateDBConnection() (*gorm.DB, error) {
 
 	}
 
-	return db, nil
+	return db.WithContext(ctx), nil
 }
