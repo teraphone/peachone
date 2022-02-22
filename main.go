@@ -10,10 +10,12 @@ import (
 	"peachone/routes"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	jwtware "github.com/gofiber/jwt/v3"
 )
 
 func setupRoutes(app *fiber.App) {
+	app.Use(cors.New())
 	setupPublic(app)
 	setupPrivate(app)
 	setupRoomService(app)
