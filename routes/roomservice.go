@@ -22,7 +22,7 @@ type GetLivekitRoomsResponse struct {
 	Success                   bool `json:"success"`
 }
 
-func GetLivekitRooms(c *fiber.Ctx) error {
+func GetLiveKitRooms(c *fiber.Ctx) error {
 	// extract user id from JWT claims
 	id, _ := getIDFromJWT(c)
 
