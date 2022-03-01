@@ -91,6 +91,10 @@ func CreateGroup(c *fiber.Ctx) error {
 		return tx.Error
 	}
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &CreateGroupResponse{
 		Success: true,
@@ -133,6 +137,10 @@ func GetGroups(c *fiber.Ctx) error {
 		}
 	}
 	db.Where("id IN (?)", ids).Find(&groups)
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &GetGroupsResponse{
@@ -178,6 +186,10 @@ func GetGroup(c *fiber.Ctx) error {
 	// get group
 	group := &models.Group{}
 	db.Where("id = ?", group_id).Find(group)
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &GetGroupResponse{
@@ -256,6 +268,10 @@ func UpdateGroup(c *fiber.Ctx) error {
 	group.Name = req.Name
 	db.Model(group).Update("name", req.Name)
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &UpdateGroupResponse{
 		Success: true,
@@ -302,6 +318,10 @@ func DeleteGroup(c *fiber.Ctx) error {
 
 	// delete group
 	db.Delete(&models.Group{}, group_id)
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &DeleteGroupResponse{
@@ -395,6 +415,10 @@ func CreateGroupUser(c *fiber.Ctx) error {
 		return err
 	}
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &CreateGroupUserResponse{
 		Success:   true,
@@ -446,6 +470,10 @@ func GetGroupUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &GetGroupUsersResponse{
@@ -504,6 +532,10 @@ func GetGroupUser(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &GetGroupUserResponse{
@@ -605,6 +637,10 @@ func UpdateGroupUser(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &UpdateGroupUserResponse{
@@ -720,6 +756,10 @@ func DeleteGroupUser(c *fiber.Ctx) error {
 		}
 	}
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &DeleteGroupUserResponse{
 		Success: true,
@@ -779,6 +819,10 @@ func CreateGroupInvite(c *fiber.Ctx) error {
 	group_invite.InviteStatusID = models.InviteStatusMap["pending"]
 	group_invite.ReferrerID = id
 	db.Create(group_invite)
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &CreateGroupInviteResponse{
@@ -847,6 +891,10 @@ func GetGroupInvites(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "No invites found.")
 	}
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &GetGroupInvitesResponse{
 		Success: true,
@@ -905,6 +953,10 @@ func GetGroupInvite(c *fiber.Ctx) error {
 	if query.RowsAffected == 0 {
 		return fiber.NewError(fiber.StatusNotFound, "No invite found.")
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &GetGroupInviteResponse{
@@ -970,6 +1022,10 @@ func DeleteGroupInvite(c *fiber.Ctx) error {
 	if query.RowsAffected == 0 {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error deleting invite.")
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &DeleteGroupInviteResponse{
@@ -1115,6 +1171,10 @@ func CreateRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error creating livekit room.")
 	}
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &CreateRoomResponse{
 		Success:     true,
@@ -1166,6 +1226,10 @@ func GetRooms(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &GetRoomsResponse{
@@ -1238,6 +1302,10 @@ func GetRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusNotFound, "Room not found.")
 	}
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &GetRoomResponse{
 		Success: true,
@@ -1301,6 +1369,10 @@ func DeleteRoom(c *fiber.Ctx) error {
 	if tx.Error != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error deleting room.")
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &DeleteRoomResponse{
@@ -1387,6 +1459,10 @@ func UpdateRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error updating room.")
 	}
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &UpdateRoomResponse{
 		Success: true,
@@ -1444,6 +1520,10 @@ func GetRoomUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &GetRoomUsersResponse{
@@ -1509,6 +1589,10 @@ func GetRoomUser(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &GetRoomUserResponse{
@@ -1629,6 +1713,10 @@ func UpdateRoomUser(c *fiber.Ctx) error {
 		return err
 	}
 
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
+
 	// return response
 	response := &UpdateRoomUserResponse{
 		Success:  true,
@@ -1696,6 +1784,10 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	// close the database connection
+	conn, _ := db.DB()
+	conn.Close()
 
 	// return response
 	response := &AcceptGroupInviteResponse{

@@ -4,6 +4,8 @@ go 1.17
 
 require (
 	github.com/gofiber/fiber/v2 v2.25.0
+	github.com/livekit/protocol v0.11.12
+	github.com/livekit/server-sdk-go v0.8.5
 	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/gorm v1.22.5
@@ -34,8 +36,6 @@ require (
 	github.com/jxskiss/base62 v0.0.0-20191017122030-4f11678b909b // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
-	github.com/livekit/protocol v0.11.12 // indirect
-	github.com/livekit/server-sdk-go v0.8.5 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/pion/datachannel v1.5.2 // indirect
 	github.com/pion/dtls/v2 v2.1.2 // indirect
