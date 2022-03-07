@@ -67,7 +67,7 @@ export DB_PASSWORD="pw"
 export DB_NAME="peachone-dev"
 export DB_PORT="5432"
 export DB_AUTOMIGRATE="false"
-export PORT="3000"
+export PORT="8080"
 export SIGNING_KEY="secret"
 export LIVEKIT_KEY=<secret-key>
 export LIVEKIT_SECRET=<secret-value>
@@ -77,7 +77,7 @@ export LIVEKIT_HOST="demo.dally.app"
 Or they can be defined inline:
 
 ```
-DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="3000" SIGNING_KEY="secret" LIVEKIT_KEY=<secret-key> LIVEKIT_SECRET=<secret-value> LIVEKIT_HOST="demo.dally.app" ./peachone
+DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="8080" SIGNING_KEY="secret" LIVEKIT_KEY=<secret-key> LIVEKIT_SECRET=<secret-value> LIVEKIT_HOST="demo.dally.app" ./peachone
 ```
 
 # REST API Endpoints
