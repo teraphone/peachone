@@ -148,3 +148,56 @@ DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" D
 
 /rooms/:group_id/:room_id/join
 - GET: returns the join token for the room
+
+# Docker Image
+## Build & Push Docker Image
+
+Building locally and pushing using Docker. (NOTE: if you're aren't on an Intel computer you need to use buildx. See "Deploy to Cloud Run" below.)
+
+1. Navigate to the peachone directory (dir of this readme).
+2. Run the command:
+
+    ```
+    docker build . --tag us-west1-docker.pkg.dev/livekit-demo/peachone/peachone:latest
+    ```
+
+3. If you have not yet configured Docker to use the gcloud command-line tool to authenticate requests to Container Registry, do so now using the command:
+
+    ```
+    gcloud auth configure-docker
+    ```
+
+    You need to do this before you can push or pull images using Docker. You only need to do it once.
+
+4. Push the container image to Container Registry:
+
+    ```
+    docker push us-west1-docker.pkg.dev/livekit-demo/peachone/peachone:latest
+    ```
+
+### Deploy to Cloud Run
+
+Documentation can be found [here](https://cloud.google.com/run/docs/deploying).
+
+Ran into issues due to image being built on my Apple Silicon Mac (arm64), causing Cloud Run to fail. Solution is to build with multi-arch support. Details [here](https://docs.docker.com/desktop/multi-arch/).
+
+    ```
+    docker buildx build --platform linux/amd64,linux/arm64 -t us-west1-docker.pkg.dev/livekit-demo/peachone/peachone:latest . --push
+    ```
+
+If you don't have an Artifact Registry repo yet you can create one [here](https://console.cloud.google.com/artifacts).
+
+## Run Docker Image Locally
+
+Instructions for testing locally can be found [here](https://cloud.google.com/run/docs/testing/local#docker).
+
+1. Use the Docker command:
+
+    ```
+    PORT="8080" && docker run -p 8080:${PORT} -e PORT=${PORT} -e DB_HOST="127.0.0.1" -e DB_USER="postgres" -e DB_PASSWORD="pw" -e DB_NAME="peachone-dev" -e DB_PORT="5432" -e DB_AUTOMIGRATE="false" -e SIGNING_KEY="secret" -e LIVEKIT_KEY=<secret-key> -e LIVEKIT_SECRET=<secret-value> -e LIVEKIT_HOST="demo.dally.app" [image-url]
+    ```
+
+    Replace [image-url] with the URL of the image you just pushed to Container Registry: `us-west1-docker.pkg.dev/livekit-demo/peachone/peachone:latest`. Don't forget to set the other necessary environment variables!
+
+2. Open [http://localhost:8080/v1/public](http://localhost:8080/v1/public) in your browser. __NOTE__: you will __not__ be able to use any private endpoints since the container wont be able to find the Postgres database. (On Mac you can get around this by setting the DB_HOST environment var to DB_HOST="docker.for.mac.localhost" when you start the container.)
+
