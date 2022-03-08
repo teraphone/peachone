@@ -299,8 +299,7 @@ func DeleteGroup(c *fiber.Ctx) error {
 // Create group user
 // -----------------------------------------------------------------------------
 type CreateGroupUserRequest struct {
-	UserID     uint   `json:"user_id"`
-	InviteCode string `json:"invite_code"`
+	UserID uint `json:"user_id"`
 }
 
 type CreateGroupUserResponse struct {
@@ -320,7 +319,7 @@ func CreateGroupUser(c *fiber.Ctx) error {
 	}
 
 	// get request body
-	req := new(CreateGroupUserRequest)
+	req := &CreateGroupUserRequest{}
 	if err := c.BodyParser(req); err != nil {
 		return err
 	}
@@ -333,42 +332,22 @@ func CreateGroupUser(c *fiber.Ctx) error {
 	// get database connection
 	db := database.DB.DB
 
-	// check invite_code
-	// TODO: double check this logic and ValidateGroupInviteCode logic
-	valid_invite_code := false
-	group_invite, err := queries.ValidateGroupInviteCode(db, uint(group_id), req.InviteCode)
-	if err != nil {
-		return err
-	} else {
-		valid_invite_code = true
+	// verify requester is already in group
+	requester := &models.GroupUser{}
+	query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(requester)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
 	}
 
-	if !valid_invite_code {
-		// verify requester is already in group
-		requester := &models.GroupUser{}
-		query := db.Where("user_id = ? AND group_id = ?", id, group_id).Find(requester)
-		if query.RowsAffected == 0 {
-			return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
-		}
-
-		// verify requester is admin or owner
-		if !(requester.GroupRoleID == models.GroupRoleMap["admin"] || requester.GroupRoleID == models.GroupRoleMap["owner"]) {
-			return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to create users in this group.")
-		}
+	// verify requester is admin or owner
+	if !(requester.GroupRoleID == models.GroupRoleMap["admin"] || requester.GroupRoleID == models.GroupRoleMap["owner"]) {
+		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to create users in this group.")
 	}
 
 	// add user to group. also add user to rooms in group.
 	err = queries.AddUserToGroupAndRooms(db, req.UserID, uint(group_id))
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error adding user to group.")
-	}
-
-	if valid_invite_code {
-		// set invite status to accepted, create referral
-		err := queries.AcceptInviteAndCreateReferral(db, group_invite, req.UserID)
-		if err != nil {
-			return err
-		}
 	}
 
 	// get group_user_info
@@ -1597,7 +1576,7 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 	db := database.DB.DB
 
 	// validate invite code
-	group_invite, err := queries.ValidateGroupInviteCode(db, 0, req.InviteCode)
+	group_invite, err := queries.GetGroupInviteCode(db, req.InviteCode)
 	if err != nil {
 		return err
 	}
@@ -1645,4 +1624,4 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 // - store data in UTC time
 // - getIDFromJWT needs error checking
 // - creating a user with an invite code needs a closer look
-// - use global DB connection
+// - make user's email unique in schema

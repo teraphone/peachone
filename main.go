@@ -116,9 +116,6 @@ func main() {
 		log.Printf("defaulting to port %s", PORT)
 	}
 
-	// Start server
-	//log.Fatal(app.Listen(fmt.Sprintf(":%s", PORT)))
-
 	// Listen from a different goroutine
 	go func() {
 		if err := app.Listen(fmt.Sprintf(":%s", PORT)); err != nil {
