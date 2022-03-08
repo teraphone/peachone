@@ -3,3 +3,6 @@ peachone
 log.txt
 .DS_Store
 database/queries.sql
+server-ca.pem
+client-key.pem
+client-cert.pem

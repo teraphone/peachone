@@ -201,3 +201,8 @@ Instructions for testing locally can be found [here](https://cloud.google.com/ru
 
 2. Open [http://localhost:8080/v1/public](http://localhost:8080/v1/public) in your browser. __NOTE__: you will __not__ be able to use any private endpoints since the container wont be able to find the Postgres database. (On Mac you can get around this by setting the DB_HOST environment var to DB_HOST="docker.for.mac.localhost" when you start the container.)
 
+# Connecting to the remote DB with vscode client
+
+Follow instructions [here](https://cloud.google.com/sql/docs/postgres/connect-admin-ip).
+
+For secure access you will need to follow the instructions [here](https://cloud.google.com/sql/docs/postgres/configure-ssl-instance#new-client).
