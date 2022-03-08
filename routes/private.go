@@ -1624,4 +1624,3 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 // - store data in UTC time
 // - getIDFromJWT needs error checking
 // - creating a user with an invite code needs a closer look
-// - make user's email unique in schema
