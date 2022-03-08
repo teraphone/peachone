@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"peachone/database"
 	"peachone/routes"
@@ -115,6 +117,37 @@ func main() {
 	}
 
 	// Start server
-	log.Fatal(app.Listen(fmt.Sprintf(":%s", PORT)))
+	//log.Fatal(app.Listen(fmt.Sprintf(":%s", PORT)))
+
+	// Listen from a different goroutine
+	go func() {
+		if err := app.Listen(fmt.Sprintf(":%s", PORT)); err != nil {
+			log.Panic(err)
+		}
+	}()
+
+	// Create channel to signify a signal being sent
+	c := make(chan os.Signal, 1)
+
+	// When an interrupt or termination signal is sent, notify the channel
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	// Block until an interrupt is received
+	<-c
+	fmt.Println("Gracefully shutting down...")
+	_ = app.Shutdown()
+
+	// Cleanup
+	fmt.Println("Running cleanup tasks...")
+	db := database.DB.DB
+	conn, err := db.DB()
+	if err != nil {
+		log.Panic(err)
+	}
+	err = conn.Close()
+	if err != nil {
+		log.Panic(err)
+	}
+	fmt.Println("Shutdown successful.")
 
 }
