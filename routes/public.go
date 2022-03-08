@@ -41,11 +41,8 @@ func Signup(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid signup credentials.")
 	}
 
-	// create database connection
-	db, err := database.CreateDBConnection(c.Context())
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
-	}
+	// get database connection
+	db := database.DB.DB
 
 	// check if email already exists in db
 	user := new(models.User)
@@ -110,11 +107,8 @@ func Login(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid login credentials.")
 	}
 
-	// create database connection
-	db, err := database.CreateDBConnection(c.Context())
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
-	}
+	// get database connection
+	db := database.DB.DB
 
 	// check if email exists in db
 	user := new(models.User)

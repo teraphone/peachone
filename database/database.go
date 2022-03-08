@@ -13,6 +13,12 @@ import (
 	"peachone/models"
 )
 
+type DBInstance struct {
+	DB *gorm.DB
+}
+
+var DB DBInstance
+
 func InitDBTables(db *gorm.DB) {
 	// drop constraints
 	sql_drop_constraints := []string{
@@ -141,7 +147,7 @@ func InitDBTables(db *gorm.DB) {
 
 }
 
-func CreateDBConnection(ctx context.Context) (*gorm.DB, error) {
+func CreateDBConnection(ctx context.Context) {
 	// get environment variables for db connection
 	DB_HOST := os.Getenv("DB_HOST")
 	DB_USER := os.Getenv("DB_USER")
@@ -155,9 +161,12 @@ func CreateDBConnection(ctx context.Context) (*gorm.DB, error) {
 	fmt.Println("connectionInfo: ", connectionInfo)
 
 	// open db connection
-	db, err := gorm.Open(postgres.Open(connectionInfo), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(connectionInfo), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
-		return nil, err
+		log.Fatal("Failed to connect to database. \n", err)
+		os.Exit(2)
 	}
 
 	log.Println("Connected Successfully to Database")
@@ -173,5 +182,7 @@ func CreateDBConnection(ctx context.Context) (*gorm.DB, error) {
 
 	}
 
-	return db.WithContext(ctx), nil
+	DB = DBInstance{
+		DB: db.WithContext(ctx),
+	}
 }

@@ -99,14 +99,9 @@ func setupRoomService(app *fiber.App) {
 }
 
 func main() {
-	// Optionally automigrate at startup
-	DB_AUTOMIGRATE := os.Getenv("DB_AUTOMIGRATE")
-	if DB_AUTOMIGRATE == "true" {
-		_, err := database.CreateDBConnection(context.Background())
-		if err != nil {
-			panic(err)
-		}
-	}
+	// Connect to DB
+	ctx := context.Background()
+	database.CreateDBConnection(ctx)
 
 	// Create app
 	app := fiber.New()
@@ -115,7 +110,7 @@ func main() {
 	// Determine port for HTTP service.
 	PORT := os.Getenv("PORT")
 	if PORT == "" {
-		PORT = "3000"
+		PORT = "8080"
 		log.Printf("defaulting to port %s", PORT)
 	}
 

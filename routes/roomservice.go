@@ -26,11 +26,8 @@ func GetLiveKitRooms(c *fiber.Ctx) error {
 	// extract user id from JWT claims
 	id, _ := getIDFromJWT(c)
 
-	// create database connection
-	db, err := database.CreateDBConnection(c.Context())
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
-	}
+	// get database connection
+	db := database.DB.DB
 
 	// get user rooms
 	user_rooms, err := queries.GetUserRooms(db, uint(id))
@@ -89,11 +86,8 @@ func JoinLiveKitRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
 	}
 
-	// create database connection
-	db, err := database.CreateDBConnection(c.Context())
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
-	}
+	// get database connection
+	db := database.DB.DB
 
 	// verify user is in group
 	group_user := &models.GroupUser{}
@@ -179,11 +173,8 @@ func GetLiveKitRoomParticipants(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid room id.")
 	}
 
-	// create database connection
-	db, err := database.CreateDBConnection(c.Context())
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error connecting to database.")
-	}
+	// get database connection
+	db := database.DB.DB
 
 	// verify user is in group
 	group_user := &models.GroupUser{}
