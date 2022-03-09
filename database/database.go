@@ -156,7 +156,7 @@ func CreateDBConnection(ctx context.Context) {
 	DB_PORT := os.Getenv("DB_PORT")
 
 	// set up db connection string
-	connectionInfoFmt := "host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=US/Pacific"
+	connectionInfoFmt := "host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC"
 	connectionInfo := fmt.Sprintf(connectionInfoFmt, DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
 	fmt.Println("connectionInfo: ", connectionInfo)
 
