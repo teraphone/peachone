@@ -32,6 +32,7 @@ func setupPublic(app *fiber.App) {
 
 	// User endpoints
 	public.Post("/signup", routes.Signup)
+	public.Post("/signup-with-invite", routes.SignupWithInvite)
 	public.Post("/login", routes.Login)
 }
 
