@@ -1280,6 +1280,14 @@ func DeleteRoom(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error deleting room.")
 	}
 
+	// get roomservice client
+	client := CreateRoomServiceClient()
+
+	// delete livekit room
+	client.DeleteRoom(c.Context(), &livekit.DeleteRoomRequest{
+		Room: EncodeRoomName(uint(group_id), uint(room_id)),
+	})
+
 	// return response
 	response := &DeleteRoomResponse{
 		Success: true,
@@ -1689,5 +1697,4 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 // - when a group user is banned,
 // -- update their room_user roles and can_join/can_see,
 // -- and drop them from any livekit rooms
-// - when a room is deleted, delete the livekit room
-// - store data in UTC time
+// - when a group is deleted, delete the rooms and livekit rooms
