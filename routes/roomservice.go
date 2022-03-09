@@ -24,7 +24,10 @@ type GetLivekitRoomsResponse struct {
 
 func GetLiveKitRooms(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get database connection
 	db := database.DB.DB
@@ -70,7 +73,10 @@ type JoinLiveKitRoomResponse struct {
 
 func JoinLiveKitRoom(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -157,7 +163,10 @@ type GetLiveKitRoomParticipantsResponse struct {
 
 func GetLiveKitRoomParticipants(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")

@@ -59,7 +59,10 @@ func CreateGroup(c *fiber.Ctx) error {
 	}
 
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get database connection
 	db := database.DB.DB
@@ -107,7 +110,10 @@ type GetGroupsResponse struct {
 
 func GetGroups(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get database connection
 	db := database.DB.DB
@@ -146,7 +152,10 @@ type GetGroupResponse struct {
 
 func GetGroup(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id := c.Params("group_id")
@@ -193,7 +202,10 @@ type UpdateGroupResponse struct {
 
 func UpdateGroup(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -261,7 +273,10 @@ type DeleteGroupResponse struct {
 
 func DeleteGroup(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -309,7 +324,10 @@ type CreateGroupUserResponse struct {
 
 func CreateGroupUser(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -375,7 +393,10 @@ type GetGroupUsersResponse struct {
 
 func GetGroupUsers(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -423,7 +444,10 @@ type GetGroupUserResponse struct {
 
 func GetGroupUser(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -482,7 +506,10 @@ type UpdateGroupUserResponse struct {
 
 func UpdateGroupUser(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -575,7 +602,10 @@ type DeleteGroupUserResponse struct {
 
 func DeleteGroupUser(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -686,7 +716,10 @@ type CreateGroupInviteResponse struct {
 
 func CreateGroupInvite(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -748,7 +781,10 @@ type GetGroupInvitesResponse struct {
 
 func GetGroupInvites(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -808,7 +844,10 @@ type GetGroupInviteResponse struct {
 
 func GetGroupInvite(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -864,7 +903,10 @@ type DeleteGroupInviteResponse struct {
 
 func DeleteGroupInvite(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -933,7 +975,10 @@ type CreateRoomResponse struct {
 func CreateRoom(c *fiber.Ctx) error {
 
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -1067,7 +1112,10 @@ type GetRoomsResponse struct {
 
 func GetRooms(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -1115,7 +1163,10 @@ type GetRoomResponse struct {
 
 func GetRoom(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -1182,7 +1233,10 @@ type DeleteRoomResponse struct {
 
 func DeleteRoom(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -1248,7 +1302,10 @@ type UpdateRoomResponse struct {
 
 func UpdateRoom(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -1326,7 +1383,10 @@ type GetRoomUsersResponse struct {
 
 func GetRoomUsers(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -1381,7 +1441,10 @@ type GetRoomUserResponse struct {
 
 func GetRoomUser(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -1449,7 +1512,10 @@ type UpdateRoomUserResponse struct {
 
 func UpdateRoomUser(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// get group_id from request
 	group_id_str := c.Params("group_id")
@@ -1564,7 +1630,10 @@ type AcceptGroupInviteResponse struct {
 
 func AcceptGroupInvite(c *fiber.Ctx) error {
 	// extract user id from JWT claims
-	id, _ := getIDFromJWT(c)
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
 
 	// validate request body
 	req := &AcceptGroupInviteRequest{}
@@ -1622,5 +1691,3 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 // -- and drop them from any livekit rooms
 // - when a room is deleted, delete the livekit room
 // - store data in UTC time
-// - getIDFromJWT needs error checking
-// - creating a user with an invite code needs a closer look

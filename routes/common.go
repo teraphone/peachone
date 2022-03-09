@@ -17,6 +17,11 @@ func getIDFromJWT(c *fiber.Ctx) (uint, error) {
 	token := c.Locals("user").(*jwt.Token)
 	claims := token.Claims.(jwt.MapClaims)
 	id := uint(claims["id"].(float64))
+	expiration := int64(claims["expiration"].(float64))
+	if time.Now().Unix() > expiration {
+		return id, fmt.Errorf("token expired")
+	}
+
 	return id, nil
 }
 
