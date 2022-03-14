@@ -225,3 +225,6 @@ func Login(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
+
+// TODO:
+// - force email to lowercase before save/lookup
