@@ -24,10 +24,11 @@ type SignupRequest struct {
 }
 
 type SignupResponse struct {
-	Success    bool        `json:"success"`
-	Token      string      `json:"token"`
-	Expiration int64       `json:"expiration"`
-	User       models.User `json:"user"`
+	Success           bool        `json:"success"`
+	Token             string      `json:"token"`
+	Expiration        int64       `json:"expiration"`
+	FirebaseAuthToken string      `json:"firebase_auth_token"`
+	User              models.User `json:"user"`
 }
 
 func Signup(c *fiber.Ctx) error {
@@ -67,15 +68,22 @@ func Signup(c *fiber.Ctx) error {
 	// create JWT token
 	token, expiration, err := createJWTToken(user)
 	if err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating JWT token.")
+	}
+
+	// create firebase auth token
+	firebase_auth_token, err := createFirebaseAuthToken(c.Context(), user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating Firebase auth token.")
 	}
 
 	// return response
 	response := &SignupResponse{
-		Success:    true,
-		Token:      token,
-		Expiration: expiration,
-		User:       *user,
+		Success:           true,
+		Token:             token,
+		Expiration:        expiration,
+		FirebaseAuthToken: firebase_auth_token,
+		User:              *user,
 	}
 	return c.JSON(response)
 
@@ -92,10 +100,11 @@ type SignupWithInviteRequest struct {
 }
 
 type SignupWithInviteResponse struct {
-	Success    bool        `json:"success"`
-	Token      string      `json:"token"`
-	Expiration int64       `json:"expiration"`
-	User       models.User `json:"user"`
+	Success           bool        `json:"success"`
+	Token             string      `json:"token"`
+	Expiration        int64       `json:"expiration"`
+	FirebaseAuthToken string      `json:"firebase_auth_token"`
+	User              models.User `json:"user"`
 }
 
 func SignupWithInvite(c *fiber.Ctx) error {
@@ -141,7 +150,13 @@ func SignupWithInvite(c *fiber.Ctx) error {
 	// create JWT token
 	token, expiration, err := createJWTToken(user)
 	if err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating JWT token.")
+	}
+
+	// create firebase auth token
+	firebase_auth_token, err := createFirebaseAuthToken(c.Context(), user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating Firebase auth token.")
 	}
 
 	// add user to group and rooms
@@ -158,10 +173,11 @@ func SignupWithInvite(c *fiber.Ctx) error {
 
 	// return response
 	response := &SignupWithInviteResponse{
-		Success:    true,
-		Token:      token,
-		Expiration: expiration,
-		User:       *user,
+		Success:           true,
+		Token:             token,
+		Expiration:        expiration,
+		FirebaseAuthToken: firebase_auth_token,
+		User:              *user,
 	}
 	return c.JSON(response)
 
@@ -176,10 +192,11 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Success    bool        `json:"success"`
-	Token      string      `json:"token"`
-	Expiration int64       `json:"expiration"`
-	User       models.User `json:"user"`
+	Success           bool        `json:"success"`
+	Token             string      `json:"token"`
+	Expiration        int64       `json:"expiration"`
+	FirebaseAuthToken string      `json:"firebase_auth_token"`
+	User              models.User `json:"user"`
 }
 
 func Login(c *fiber.Ctx) error {
@@ -212,15 +229,22 @@ func Login(c *fiber.Ctx) error {
 	// create JWT token
 	token, expiration, err := createJWTToken(user)
 	if err != nil {
-		return err
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating JWT token.")
+	}
+
+	// create firebase auth token
+	firebase_auth_token, err := createFirebaseAuthToken(c.Context(), user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating Firebase auth token.")
 	}
 
 	// return response
 	response := &LoginResponse{
-		Success:    true,
-		Token:      token,
-		Expiration: expiration,
-		User:       *user,
+		Success:           true,
+		Token:             token,
+		Expiration:        expiration,
+		FirebaseAuthToken: firebase_auth_token,
+		User:              *user,
 	}
 	return c.JSON(response)
 
