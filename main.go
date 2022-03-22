@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"peachone/database"
+	"peachone/fbadmin"
 	"peachone/routes"
 
 	"github.com/gofiber/fiber/v2"
@@ -102,8 +103,12 @@ func setupRoomService(app *fiber.App) {
 }
 
 func main() {
-	// Connect to DB
+	// Init Firebase Admin SDK
 	ctx := context.Background()
+	fbadmin.InitFirebaseApp(ctx)
+	fbadmin.InitFirebaseAuthClient(ctx)
+
+	// Connect to DB
 	database.CreateDBConnection(ctx)
 
 	// Create app
