@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"peachone/fbadmin"
 	"peachone/models"
@@ -45,10 +46,8 @@ func createJWTToken(user *models.User) (string, int64, error) {
 func createFirebaseAuthToken(ctx context.Context, user *models.User) (string, error) {
 	uid := strconv.FormatUint(uint64(user.ID), 10)
 	token, err := fbadmin.AuthClient.CustomToken(ctx, uid)
-	fmt.Println("createFirebaseAuthToken", token, err)
-	fmt.Println("AuthClient", fbadmin.AuthClient)
-	fmt.Println("App", fbadmin.App)
 	if err != nil {
+		log.Printf("error minting custom token: %v\n", err)
 		return "", err
 	}
 

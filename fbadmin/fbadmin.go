@@ -3,9 +3,11 @@ package fbadmin
 import (
 	"context"
 	"log"
+	"os"
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
+	"google.golang.org/api/option"
 )
 
 var App *firebase.App
@@ -14,16 +16,26 @@ var App *firebase.App
 var AuthClient *auth.Client
 
 func InitFirebaseApp(ctx context.Context) {
-	conf := &firebase.Config{
-		ServiceAccountID: "firebase-adminsdk-7dp4y@livekit-demo.iam.gserviceaccount.com",
+
+	SERVICE_ACCOUNT_JSON := os.Getenv("SERVICE_ACCOUNT_JSON")
+	if SERVICE_ACCOUNT_JSON == "" {
+		conf := &firebase.Config{
+			ServiceAccountID: "firebase-adminsdk-7dp4y@livekit-demo.iam.gserviceaccount.com",
+		}
+		app, err := firebase.NewApp(ctx, conf)
+		if err != nil {
+			log.Fatalf("error initializing app: %v\n", err)
+		}
+		App = app
+	} else {
+		opt := option.WithCredentialsFile(SERVICE_ACCOUNT_JSON)
+		app, err := firebase.NewApp(ctx, nil, opt)
+		if err != nil {
+			log.Fatalf("error initializing app: %v\n", err)
+		}
+		App = app
 	}
 
-	app, err := firebase.NewApp(ctx, conf)
-	if err != nil {
-		log.Fatalf("error initializing app: %v\n", err)
-	}
-
-	App = app
 }
 
 func InitFirebaseAuthClient(ctx context.Context) {

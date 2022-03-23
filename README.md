@@ -72,13 +72,16 @@ export SIGNING_KEY="secret"
 export LIVEKIT_KEY=<secret-key>
 export LIVEKIT_SECRET=<secret-value>
 export LIVEKIT_HOST="demo.dally.app"
+export SERVICE_ACCOUNT_JSON=<path-to-service-account-key-file>
 ```
 
 Or they can be defined inline:
 
 ```
-DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="8080" SIGNING_KEY="secret" LIVEKIT_KEY=<secret-key> LIVEKIT_SECRET=<secret-value> LIVEKIT_HOST="demo.dally.app" ./peachone
+DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="8080" SIGNING_KEY="secret" LIVEKIT_KEY=<secret-key> LIVEKIT_SECRET=<secret-value> LIVEKIT_HOST="demo.dally.app" SERVICE_ACCOUNT_JSON="livekit-demo-firebase-adminsdk-7dp4y-85e675b567.json" ./peachone
 ```
+
+Note: the SERVICE_ACCOUNT_JSON environment variable is necessary for local development only. If the service is running in gcloud then the variable should be empty. SERVICE_ACCOUNT_JSON should be a path to the service account key for the Firebase Admin SDK available [here](https://console.firebase.google.com/project/livekit-demo/settings/serviceaccounts/adminsdk). Warning: this key should be kept secret.
 
 # REST API Endpoints
 
@@ -194,7 +197,7 @@ Instructions for testing locally can be found [here](https://cloud.google.com/ru
 1. Use the Docker command:
 
     ```
-    PORT="8080" && docker run -p 8080:${PORT} -e PORT=${PORT} -e DB_HOST="127.0.0.1" -e DB_USER="postgres" -e DB_PASSWORD="pw" -e DB_NAME="peachone-dev" -e DB_PORT="5432" -e DB_AUTOMIGRATE="false" -e SIGNING_KEY="secret" -e LIVEKIT_KEY=<secret-key> -e LIVEKIT_SECRET=<secret-value> -e LIVEKIT_HOST="demo.dally.app" [image-url]
+    PORT="8080" && docker run -p 8080:${PORT} -e PORT=${PORT} -e DB_HOST="127.0.0.1" -e DB_USER="postgres" -e DB_PASSWORD="pw" -e DB_NAME="peachone-dev" -e DB_PORT="5432" -e DB_AUTOMIGRATE="false" -e SIGNING_KEY="secret" -e LIVEKIT_KEY=<secret-key> -e LIVEKIT_SECRET=<secret-value> -e LIVEKIT_HOST="demo.dally.app" -e SERVICE_ACCOUNT_JSON=<path-to-service-account-key-file> [image-url]
     ```
 
     Replace [image-url] with the URL of the image you just pushed to Container Registry: `us-west1-docker.pkg.dev/livekit-demo/peachone/peachone:latest`. Don't forget to set the other necessary environment variables!
