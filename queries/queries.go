@@ -218,3 +218,13 @@ func GetUserRooms(db *gorm.DB, user_id uint) ([]UserRoom, error) {
 
 	return user_rooms, nil
 }
+
+func GetRoomUser(db *gorm.DB, room_id uint, user_id uint) (*models.RoomUser, error) {
+	room_user := &models.RoomUser{}
+	query := db.Where("room_id = ? AND user_id = ?", room_id, user_id).Find(room_user)
+	if query.RowsAffected == 0 {
+		return nil, fiber.NewError(fiber.StatusNotFound, "Error finding room user.")
+	}
+
+	return room_user, nil
+}
