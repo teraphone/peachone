@@ -82,9 +82,9 @@ type RoomUserInfo struct {
 }
 
 type RoomInfo struct {
-	Room  Room         `json:"room"`
-	Users RoomUserInfo `json:"users"`
-	Token string       `json:"token"`
+	Room  Room           `json:"room"`
+	Users []RoomUserInfo `json:"users"`
+	Token string         `json:"token"`
 }
 
 type GroupInfo struct {
