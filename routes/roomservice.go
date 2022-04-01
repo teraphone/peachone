@@ -1,16 +1,13 @@
 package routes
 
 import (
-	"os"
 	"peachone/database"
 	"peachone/models"
 	"peachone/queries"
 	"strconv"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/livekit/protocol/auth"
 	livekit "github.com/livekit/protocol/livekit"
 )
 
@@ -120,26 +117,7 @@ func JoinLiveKitRoom(c *fiber.Ctx) error {
 	}
 
 	// construct access token
-	LIVEKIT_KEY := os.Getenv("LIVEKIT_KEY")
-	LIVEKIT_SECRET := os.Getenv("LIVEKIT_SECRET")
-	at := auth.NewAccessToken(LIVEKIT_KEY, LIVEKIT_SECRET)
-	grant := &auth.VideoGrant{
-		RoomCreate: false,
-		RoomList:   false,
-		RoomRecord: false,
-
-		RoomAdmin: room_user.RoomRoleID > models.RoomRoleMap["member"],
-		RoomJoin:  room_user.CanJoin,
-		Room:      EncodeRoomName(uint(group_id), uint(room_id)),
-
-		CanPublish:   &room_user.CanJoin,
-		CanSubscribe: &room_user.CanJoin,
-	}
-	at.AddGrant(grant).
-		SetIdentity(strconv.Itoa(int(id))).
-		SetValidFor(730 * time.Hour)
-
-	token, err := at.ToJWT()
+	token, err := createLiveKitJoinToken(room_user, uint(group_id), uint(room_id), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error generating access token.")
 	}

@@ -14,6 +14,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	lksdk "github.com/livekit/server-sdk-go"
+
+	"github.com/livekit/protocol/auth"
 )
 
 func getIDFromJWT(c *fiber.Ctx) (uint, error) {
@@ -52,6 +54,31 @@ func createFirebaseAuthToken(ctx context.Context, user *models.User) (string, er
 	}
 
 	return token, nil
+}
+
+func createLiveKitJoinToken(room_user *models.RoomUser, group_id uint, room_id uint, user_id uint) (string, error) {
+	LIVEKIT_KEY := os.Getenv("LIVEKIT_KEY")
+	LIVEKIT_SECRET := os.Getenv("LIVEKIT_SECRET")
+	at := auth.NewAccessToken(LIVEKIT_KEY, LIVEKIT_SECRET)
+	grant := &auth.VideoGrant{
+		RoomCreate: false,
+		RoomList:   false,
+		RoomRecord: false,
+
+		RoomAdmin: room_user.RoomRoleID > models.RoomRoleMap["member"],
+		RoomJoin:  room_user.CanJoin,
+		Room:      EncodeRoomName(group_id, room_id),
+
+		CanPublish:   &room_user.CanJoin,
+		CanSubscribe: &room_user.CanJoin,
+	}
+	at.AddGrant(grant).
+		SetIdentity(strconv.Itoa(int(user_id))).
+		SetValidFor(730 * time.Hour)
+
+	token, err := at.ToJWT()
+
+	return token, err
 }
 
 func CreateRoomServiceClient() *lksdk.RoomServiceClient {
