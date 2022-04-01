@@ -1693,6 +1693,116 @@ func AcceptGroupInvite(c *fiber.Ctx) error {
 
 }
 
+// -----------------------------------------------------------------------------
+// Get World
+// -----------------------------------------------------------------------------
+
+type GetWorldResponse struct {
+	Success    bool               `json:"success"`
+	GroupsInfo []models.GroupInfo `json:"groups_info"`
+}
+
+func GetWorld(c *fiber.Ctx) error {
+	// extract user id from JWT claims
+	id, err := getIDFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT token.")
+	}
+
+	// get database connection
+	db := database.DB.DB
+
+	// get group_users for user
+	group_users := []models.GroupUser{}
+	db.Where("user_id = ?", id).Find(&group_users)
+
+	// get group for each group_id in group_users for user
+	groups := []models.Group{}
+	var ids []uint
+	for _, group_user := range group_users {
+
+		// only return groups that user is not banned from
+		if group_user.GroupRoleID != models.GroupRoleMap["banned"] {
+			ids = append(ids, group_user.GroupID)
+		}
+	}
+	db.Where("id IN (?)", ids).Find(&groups)
+
+	// for each group...
+	// - get rooms. for each room...
+	// -- get room_user
+	// -- get room_users_info
+	// -- get token
+	// -- assemble room_info
+	// - get group_users_info
+	// - assemble group_info
+
+	groups_info := []models.GroupInfo{}
+	for _, group := range groups {
+		// get rooms
+		rooms, err := queries.GetRoomsNotBanned(db, group.ID, id)
+		if err != nil {
+			return err
+		}
+
+		rooms_info := []models.RoomInfo{}
+		for _, room := range rooms {
+			room_info := &models.RoomInfo{}
+
+			// get room_user
+			room_user, err := queries.GetRoomUser(db, room.ID, id)
+			if err != nil {
+				return err
+			}
+
+			// get room_users_info
+			room_users_info, err := queries.GetRoomUsersInfo(db, room.ID)
+			if err != nil {
+				return err
+			}
+
+			// get token
+			token, err := createLiveKitJoinToken(room_user, group.ID, room.ID, id)
+			if err != nil {
+				return err
+			}
+
+			// assemble room_info
+			room_info.Room = room
+			room_info.Users = room_users_info
+			room_info.Token = token
+
+			// add room_info to rooms_info
+			rooms_info = append(rooms_info, *room_info)
+
+		}
+
+		// get group_users_info
+		group_users_info, err := queries.GetGroupUsersInfo(db, group.ID)
+		if err != nil {
+			return err
+		}
+
+		// assemble group_info
+		group_info := &models.GroupInfo{
+			Group: group,
+			Users: group_users_info,
+			Rooms: rooms_info,
+		}
+
+		// add group_info to groups_info
+		groups_info = append(groups_info, *group_info)
+
+	}
+
+	// return response
+	response := &GetWorldResponse{
+		Success:    true,
+		GroupsInfo: groups_info,
+	}
+	return c.JSON(response)
+}
+
 // TODO:
 // - when a group user is banned,
 // -- update their room_user roles and can_join/can_see,

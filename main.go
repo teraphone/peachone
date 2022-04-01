@@ -86,6 +86,9 @@ func setupPrivate(app *fiber.App) {
 	// Invites endpoints
 	private.Post("/invites", routes.AcceptGroupInvite)
 
+	// World endpoints
+	private.Get("/world", routes.GetWorld)
+
 }
 
 func setupRoomService(app *fiber.App) {
