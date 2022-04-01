@@ -3,28 +3,19 @@ package queries
 import (
 	"fmt"
 	"peachone/models"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
-type GroupUserInfo struct {
-	UserID      uint      `json:"user_id"`
-	Name        string    `json:"name"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	GroupRoleID uint      `json:"group_role_id"`
-}
-
-func GetGroupUserInfo(db *gorm.DB, group_id uint, user_id uint) (*GroupUserInfo, error) {
+func GetGroupUserInfo(db *gorm.DB, group_id uint, user_id uint) (*models.GroupUserInfo, error) {
 	sql_fmt := "SELECT users.id as user_id, users.name, group_users.created_at, group_users.updated_at, group_users.group_role_id " +
 		"FROM group_users " +
 		"JOIN users " +
 		"ON group_users.user_id = users.id " +
 		"WHERE group_users.group_id = %d AND group_users.user_id = %d;"
 	sql := fmt.Sprintf(sql_fmt, group_id, user_id)
-	group_user_info := &GroupUserInfo{}
+	group_user_info := &models.GroupUserInfo{}
 	tx := db.Raw(sql).Scan(group_user_info)
 	if tx.RowsAffected == 0 {
 		return nil, fiber.NewError(fiber.StatusNotFound, "Group user not found.")
@@ -33,14 +24,14 @@ func GetGroupUserInfo(db *gorm.DB, group_id uint, user_id uint) (*GroupUserInfo,
 	return group_user_info, nil
 }
 
-func GetGroupUsersInfo(db *gorm.DB, group_id uint) ([]GroupUserInfo, error) {
+func GetGroupUsersInfo(db *gorm.DB, group_id uint) ([]models.GroupUserInfo, error) {
 	sql_fmt := "SELECT users.id as user_id, users.name, group_users.created_at, group_users.updated_at, group_users.group_role_id " +
 		"FROM group_users " +
 		"JOIN users " +
 		"ON group_users.user_id = users.id " +
 		"WHERE group_users.group_id = %d;"
 	sql := fmt.Sprintf(sql_fmt, group_id)
-	group_users_info := []GroupUserInfo{}
+	group_users_info := []models.GroupUserInfo{}
 	tx := db.Raw(sql).Scan(&group_users_info)
 	if tx.RowsAffected == 0 {
 		return nil, fiber.NewError(fiber.StatusNotFound, "Group users not found.")
@@ -173,19 +164,14 @@ func GetRoomsNotBanned(db *gorm.DB, group_id uint, user_id uint) ([]models.Room,
 	return rooms, nil
 }
 
-type RoomUserInfo struct {
-	Name string `json:"name"`
-	models.RoomUser
-}
-
-func GetRoomUserInfo(db *gorm.DB, room_id uint, user_id uint) (*RoomUserInfo, error) {
+func GetRoomUserInfo(db *gorm.DB, room_id uint, user_id uint) (*models.RoomUserInfo, error) {
 	sql_fmt := "SELECT users.name, room_users.* " +
 		"FROM room_users " +
 		"JOIN users " +
 		"ON users.id = room_users.user_id " +
 		"WHERE room_users.room_id = %d AND room_users.user_id = %d;"
 	sql := fmt.Sprintf(sql_fmt, room_id, user_id)
-	room_user_info := &RoomUserInfo{}
+	room_user_info := &models.RoomUserInfo{}
 	tx := db.Raw(sql).Scan(room_user_info)
 	if tx.Error != nil {
 		return nil, fiber.NewError(fiber.StatusNotFound, "Error finding room user info.")
@@ -194,14 +180,14 @@ func GetRoomUserInfo(db *gorm.DB, room_id uint, user_id uint) (*RoomUserInfo, er
 	return room_user_info, nil
 }
 
-func GetRoomUsersInfo(db *gorm.DB, room_id uint) ([]RoomUserInfo, error) {
+func GetRoomUsersInfo(db *gorm.DB, room_id uint) ([]models.RoomUserInfo, error) {
 	sql_fmt := "SELECT users.name, room_users.* " +
 		"FROM room_users " +
 		"JOIN users " +
 		"ON users.id = room_users.user_id " +
 		"WHERE room_users.room_id = %d;"
 	sql := fmt.Sprintf(sql_fmt, room_id)
-	room_users_info := []RoomUserInfo{}
+	room_users_info := []models.RoomUserInfo{}
 	tx := db.Raw(sql).Scan(&room_users_info)
 	if tx.Error != nil {
 		return nil, fiber.NewError(fiber.StatusNotFound, "Error finding room users' info.")

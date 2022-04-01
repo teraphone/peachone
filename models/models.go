@@ -67,3 +67,28 @@ type Referral struct {
 	UserID     uint      `gorm:"primary_key" json:"user_id"`
 	ReferrerID uint      `gorm:"primary_key" json:"referrer_id"`
 }
+
+type GroupUserInfo struct {
+	UserID      uint      `json:"user_id"`
+	Name        string    `json:"name"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	GroupRoleID uint      `json:"group_role_id"`
+}
+
+type RoomUserInfo struct {
+	Name string `json:"name"`
+	RoomUser
+}
+
+type RoomInfo struct {
+	Room  Room         `json:"room"`
+	Users RoomUserInfo `json:"users"`
+	Token string       `json:"token"`
+}
+
+type GroupInfo struct {
+	Group Group           `json:"group"`
+	Users []GroupUserInfo `json:"users"`
+	Rooms []RoomInfo      `json:"rooms"`
+}

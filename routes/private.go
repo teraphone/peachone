@@ -318,8 +318,8 @@ type CreateGroupUserRequest struct {
 }
 
 type CreateGroupUserResponse struct {
-	Success   bool                  `json:"success"`
-	GroupUser queries.GroupUserInfo `json:"group_user"`
+	Success   bool                 `json:"success"`
+	GroupUser models.GroupUserInfo `json:"group_user"`
 }
 
 func CreateGroupUser(c *fiber.Ctx) error {
@@ -387,8 +387,8 @@ func CreateGroupUser(c *fiber.Ctx) error {
 // Get group users
 // -----------------------------------------------------------------------------
 type GetGroupUsersResponse struct {
-	Success    bool                    `json:"success"`
-	GroupUsers []queries.GroupUserInfo `json:"group_users"`
+	Success    bool                   `json:"success"`
+	GroupUsers []models.GroupUserInfo `json:"group_users"`
 }
 
 func GetGroupUsers(c *fiber.Ctx) error {
@@ -438,8 +438,8 @@ func GetGroupUsers(c *fiber.Ctx) error {
 // Get group user
 // -----------------------------------------------------------------------------
 type GetGroupUserResponse struct {
-	Success   bool                  `json:"success"`
-	GroupUser queries.GroupUserInfo `json:"group_user"`
+	Success   bool                 `json:"success"`
+	GroupUser models.GroupUserInfo `json:"group_user"`
 }
 
 func GetGroupUser(c *fiber.Ctx) error {
@@ -500,8 +500,8 @@ type UpdateGroupUserRequest struct {
 }
 
 type UpdateGroupUserResponse struct {
-	Success   bool                  `json:"success"`
-	GroupUser queries.GroupUserInfo `json:"group_user"`
+	Success   bool                 `json:"success"`
+	GroupUser models.GroupUserInfo `json:"group_user"`
 }
 
 func UpdateGroupUser(c *fiber.Ctx) error {
@@ -1385,8 +1385,8 @@ func UpdateRoom(c *fiber.Ctx) error {
 // Get room users
 // -----------------------------------------------------------------------------
 type GetRoomUsersResponse struct {
-	Success   bool                   `json:"success"`
-	RoomUsers []queries.RoomUserInfo `json:"room_users"`
+	Success   bool                  `json:"success"`
+	RoomUsers []models.RoomUserInfo `json:"room_users"`
 }
 
 func GetRoomUsers(c *fiber.Ctx) error {
@@ -1443,8 +1443,8 @@ func GetRoomUsers(c *fiber.Ctx) error {
 // Get room user
 // -----------------------------------------------------------------------------
 type GetRoomUserResponse struct {
-	Success  bool                 `json:"success"`
-	RoomUser queries.RoomUserInfo `json:"room_user"`
+	Success  bool                `json:"success"`
+	RoomUser models.RoomUserInfo `json:"room_user"`
 }
 
 func GetRoomUser(c *fiber.Ctx) error {
@@ -1514,8 +1514,8 @@ type UpdateRoomUserRequest struct {
 }
 
 type UpdateRoomUserResponse struct {
-	Success  bool                 `json:"success"`
-	RoomUser queries.RoomUserInfo `json:"room_user"`
+	Success  bool                `json:"success"`
+	RoomUser models.RoomUserInfo `json:"room_user"`
 }
 
 func UpdateRoomUser(c *fiber.Ctx) error {
@@ -1631,9 +1631,9 @@ type AcceptGroupInviteRequest struct {
 }
 
 type AcceptGroupInviteResponse struct {
-	Success       bool                  `json:"success"`
-	GroupUserInfo queries.GroupUserInfo `json:"group_user_info"`
-	Group         models.Group          `json:"group"`
+	Success       bool                 `json:"success"`
+	GroupUserInfo models.GroupUserInfo `json:"group_user_info"`
+	Group         models.Group         `json:"group"`
 }
 
 func AcceptGroupInvite(c *fiber.Ctx) error {
