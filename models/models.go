@@ -77,8 +77,10 @@ type GroupUserInfo struct {
 }
 
 type RoomUserInfo struct {
-	Name string `json:"name"`
-	RoomUser
+	UserID     uint `json:"user_id"`
+	RoomRoleID uint `json:"room_role_id"`
+	CanJoin    bool `json:"can_join"`
+	CanSee     bool `json:"can_see"`
 }
 
 type RoomInfo struct {

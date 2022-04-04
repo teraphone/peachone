@@ -165,11 +165,9 @@ func GetRoomsNotBanned(db *gorm.DB, group_id uint, user_id uint) ([]models.Room,
 }
 
 func GetRoomUserInfo(db *gorm.DB, room_id uint, user_id uint) (*models.RoomUserInfo, error) {
-	sql_fmt := "SELECT users.name, room_users.* " +
+	sql_fmt := "SELECT user_id, room_role_id, can_join, can_see " +
 		"FROM room_users " +
-		"JOIN users " +
-		"ON users.id = room_users.user_id " +
-		"WHERE room_users.room_id = %d AND room_users.user_id = %d;"
+		"WHERE room_id = %d AND user_id = %d;"
 	sql := fmt.Sprintf(sql_fmt, room_id, user_id)
 	room_user_info := &models.RoomUserInfo{}
 	tx := db.Raw(sql).Scan(room_user_info)
@@ -181,11 +179,9 @@ func GetRoomUserInfo(db *gorm.DB, room_id uint, user_id uint) (*models.RoomUserI
 }
 
 func GetRoomUsersInfo(db *gorm.DB, room_id uint) ([]models.RoomUserInfo, error) {
-	sql_fmt := "SELECT users.name, room_users.* " +
+	sql_fmt := "SELECT user_id, room_role_id, can_join, can_see " +
 		"FROM room_users " +
-		"JOIN users " +
-		"ON users.id = room_users.user_id " +
-		"WHERE room_users.room_id = %d;"
+		"WHERE room_id = %d;"
 	sql := fmt.Sprintf(sql_fmt, room_id)
 	room_users_info := []models.RoomUserInfo{}
 	tx := db.Raw(sql).Scan(&room_users_info)
