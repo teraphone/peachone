@@ -738,8 +738,8 @@ func CreateGroupInvite(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "You do not have access to this group.")
 	}
 
-	// verify user is admin or owner
-	if group_user.GroupRoleID < models.GroupRoleMap["admin"] {
+	// verify user is member
+	if group_user.GroupRoleID < models.GroupRoleMap["member"] {
 		return fiber.NewError(fiber.StatusUnauthorized, "You do not have permission to invite users to this group.")
 	}
 
