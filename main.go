@@ -22,6 +22,7 @@ func setupRoutes(app *fiber.App) {
 	setupPublic(app)
 	setupPrivate(app)
 	setupRoomService(app)
+	setupWebhooks(app)
 
 }
 
@@ -103,6 +104,17 @@ func setupRoomService(app *fiber.App) {
 	roomservice.Get("/rooms/:group_id/:room_id/join", routes.JoinLiveKitRoom)
 	roomservice.Get("/rooms/:group_id/:room_id", routes.GetLiveKitRoomParticipants)
 
+}
+
+func setupWebhooks(app *fiber.App) {
+	webhooks := app.Group("/v1/webhooks")
+	// SIGNING_KEY := os.Getenv("SIGNING_KEY")
+	// webhooks.Use(jwtware.New(jwtware.Config{
+	// 	SigningKey: []byte(SIGNING_KEY),
+	// }))
+
+	// Livekit webhook handler
+	webhooks.Post("/livekit", routes.LivekitHandler)
 }
 
 func main() {

@@ -5,9 +5,10 @@ go 1.17
 require (
 	firebase.google.com/go/v4 v4.7.1
 	github.com/gofiber/fiber/v2 v2.25.0
-	github.com/livekit/protocol v0.11.12
+	github.com/livekit/protocol v0.13.0
 	github.com/livekit/server-sdk-go v0.8.5
 	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838
+	google.golang.org/api v0.73.0
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/gorm v1.22.5
 )
@@ -78,7 +79,6 @@ require (
 	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	google.golang.org/api v0.73.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220310185008-1973136f34c6 // indirect
 	google.golang.org/grpc v1.45.0 // indirect
