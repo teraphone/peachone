@@ -3,13 +3,11 @@ package routes
 import (
 	"crypto/sha256"
 	"encoding/base64"
-	"io/ioutil"
 	"log"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/livekit/protocol/auth"
-	"github.com/livekit/protocol/livekit"
 )
 
 // --------------------------------------------------------------------------------
@@ -24,20 +22,10 @@ func LivekitHandler(c *fiber.Ctx) error {
 	keys := map[string]string{os.Getenv("LIVEKIT_KEY"): os.Getenv("LIVEKIT_SECRET")}
 	provider := auth.NewFileBasedKeyProviderFromMap(keys)
 
-	// get request body
-	event := &livekit.WebhookEvent{}
-	if err := c.BodyParser(event); err != nil {
-		log.Println("Error parsing body:", err)
-		return err
-	}
-
 	// get raw body
-	data, err := ioutil.ReadAll(c.Context().RequestBodyStream())
-	if err != nil {
-		log.Println("Error reading body:", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Error reading body.")
-	}
-	log.Println("Raw body:", string(data))
+	ctx := c.Context()
+	data := ctx.PostBody()
+	log.Println("post body:", data)
 
 	// get request header
 	authToken := c.Get("Authorization")
@@ -73,7 +61,7 @@ func LivekitHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "Invalid checksum")
 	}
 
-	log.Println("Received valid webhook", event)
+	log.Println("Received valid webhook", data)
 	log.Println("can handle as desired")
 
 	// return response
