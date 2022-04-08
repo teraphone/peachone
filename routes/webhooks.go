@@ -1,10 +1,14 @@
 package routes
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"log"
 	"os"
+	"peachone/fbadmin"
+	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/livekit/protocol/auth"
@@ -80,13 +84,13 @@ func LivekitHandler(c *fiber.Ctx) error {
 	// dispatch event to appropriate handler
 	switch event.Event {
 	case RoomStarted:
-		handleRoomStarted(&event)
+		handleRoomStarted(ctx, &event)
 	case RoomFinished:
-		handleRoomFinished(&event)
+		handleRoomFinished(ctx, &event)
 	case ParticipantJoined:
-		handleParticipantJoined(&event)
+		handleParticipantJoined(ctx, &event)
 	case ParticipantLeft:
-		handleParticipantLeft(&event)
+		handleParticipantLeft(ctx, &event)
 	default:
 		log.Println("Ignoring event:", event.Event)
 	}
@@ -98,24 +102,63 @@ func LivekitHandler(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-func handleRoomStarted(event *livekit.WebhookEvent) {
+func handleRoomStarted(ctx context.Context, event *livekit.WebhookEvent) {
 	log.Println("Handling event:", event.Event)
 	log.Println("Room name:", event.Room.Name)
 }
 
-func handleRoomFinished(event *livekit.WebhookEvent) {
+func handleRoomFinished(ctx context.Context, event *livekit.WebhookEvent) {
 	log.Println("Handling event:", event.Event)
 	log.Println("Room name:", event.Room.Name)
 }
 
-func handleParticipantJoined(event *livekit.WebhookEvent) {
+func handleParticipantJoined(ctx context.Context, event *livekit.WebhookEvent) {
 	log.Println("Handling event:", event.Event)
 	log.Println("Room name:", event.Room.Name)
 	log.Println("Participant identity:", event.Participant.Identity)
 }
 
-func handleParticipantLeft(event *livekit.WebhookEvent) {
+func handleParticipantLeft(ctx context.Context, event *livekit.WebhookEvent) {
 	log.Println("Handling event:", event.Event)
 	log.Println("Room name:", event.Room.Name)
 	log.Println("Participant identity:", event.Participant.Identity)
+
+	// extract group and room ids
+	nameParts := strings.Split(event.Room.Name, "/")
+	if len(nameParts) != 2 {
+		log.Println("Invalid room name:", event.Room.Name)
+		return
+	}
+
+	groupIdStr := nameParts[0]
+	roomIdStr := nameParts[1]
+	userIdStr := event.Participant.Identity
+
+	// verify groupId, roomId, userId are numbers
+	_, err := strconv.Atoi(groupIdStr)
+	if err != nil {
+		log.Println("Invalid groupId:", groupIdStr)
+		return
+	}
+	_, err = strconv.Atoi(roomIdStr)
+	if err != nil {
+		log.Println("Invalid roomId:", roomIdStr)
+		return
+	}
+	_, err = strconv.Atoi(userIdStr)
+	if err != nil {
+		log.Println("Invalid userId:", userIdStr)
+		return
+	}
+
+	// create database reference
+	path := "participants/" + groupIdStr + "/" + roomIdStr + "/" + userIdStr
+	ref := fbadmin.DBClient.NewRef(path)
+
+	// remove participant from database
+	err = ref.Delete(ctx)
+	if err != nil {
+		log.Println("Error deleting participant:", err, event)
+	}
+
 }
