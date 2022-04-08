@@ -8,6 +8,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/livekit/protocol/auth"
+	livekit "github.com/livekit/protocol/livekit"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // --------------------------------------------------------------------------------
@@ -17,15 +19,20 @@ type LivekitHandlerResponse struct {
 	Success bool `json:"success"`
 }
 
+const (
+	RoomStarted       string = "room_started"
+	RoomFinished      string = "room_finished"
+	ParticipantJoined string = "participant_joined"
+	ParticipantLeft   string = "participant_left"
+)
+
 func LivekitHandler(c *fiber.Ctx) error {
-	log.Println("Received livekit webhook", c)
 	keys := map[string]string{os.Getenv("LIVEKIT_KEY"): os.Getenv("LIVEKIT_SECRET")}
 	provider := auth.NewFileBasedKeyProviderFromMap(keys)
 
 	// get raw body
 	ctx := c.Context()
 	data := ctx.PostBody()
-	log.Println("post body:", data)
 
 	// get request header
 	authToken := c.Get("Authorization")
@@ -61,12 +68,54 @@ func LivekitHandler(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "Invalid checksum")
 	}
 
-	log.Println("Received valid webhook", data)
-	log.Println("can handle as desired")
+	unmarshalOpts := protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+		AllowPartial:   true,
+	}
+	event := livekit.WebhookEvent{}
+	if err = unmarshalOpts.Unmarshal(data, &event); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error unmarshaling webhook event")
+	}
+
+	// dispatch event to appropriate handler
+	switch event.Event {
+	case RoomStarted:
+		handleRoomStarted(&event)
+	case RoomFinished:
+		handleRoomFinished(&event)
+	case ParticipantJoined:
+		handleParticipantJoined(&event)
+	case ParticipantLeft:
+		handleParticipantLeft(&event)
+	default:
+		log.Println("Ignoring event:", event.Event)
+	}
 
 	// return response
 	response := &LivekitHandlerResponse{
 		Success: true,
 	}
 	return c.JSON(response)
+}
+
+func handleRoomStarted(event *livekit.WebhookEvent) {
+	log.Println("Handling event:", event.Event)
+	log.Println("Room name:", event.Room.Name)
+}
+
+func handleRoomFinished(event *livekit.WebhookEvent) {
+	log.Println("Handling event:", event.Event)
+	log.Println("Room name:", event.Room.Name)
+}
+
+func handleParticipantJoined(event *livekit.WebhookEvent) {
+	log.Println("Handling event:", event.Event)
+	log.Println("Room name:", event.Room.Name)
+	log.Println("Participant identity:", event.Participant.Identity)
+}
+
+func handleParticipantLeft(event *livekit.WebhookEvent) {
+	log.Println("Handling event:", event.Event)
+	log.Println("Room name:", event.Room.Name)
+	log.Println("Participant identity:", event.Participant.Identity)
 }
