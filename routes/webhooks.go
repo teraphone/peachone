@@ -6,9 +6,6 @@ import (
 	"encoding/base64"
 	"log"
 	"os"
-	"peachone/fbadmin"
-	"strconv"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/livekit/protocol/auth"
@@ -122,43 +119,4 @@ func handleParticipantLeft(ctx context.Context, event *livekit.WebhookEvent) {
 	log.Println("Handling event:", event.Event)
 	log.Println("Room name:", event.Room.Name)
 	log.Println("Participant identity:", event.Participant.Identity)
-
-	// extract group and room ids
-	nameParts := strings.Split(event.Room.Name, "/")
-	if len(nameParts) != 2 {
-		log.Println("Invalid room name:", event.Room.Name)
-		return
-	}
-
-	groupIdStr := nameParts[0]
-	roomIdStr := nameParts[1]
-	userIdStr := event.Participant.Identity
-
-	// verify groupId, roomId, userId are numbers
-	_, err := strconv.Atoi(groupIdStr)
-	if err != nil {
-		log.Println("Invalid groupId:", groupIdStr)
-		return
-	}
-	_, err = strconv.Atoi(roomIdStr)
-	if err != nil {
-		log.Println("Invalid roomId:", roomIdStr)
-		return
-	}
-	_, err = strconv.Atoi(userIdStr)
-	if err != nil {
-		log.Println("Invalid userId:", userIdStr)
-		return
-	}
-
-	// create database reference
-	path := "participants/" + groupIdStr + "/" + roomIdStr + "/" + userIdStr
-	ref := fbadmin.DBClient.NewRef(path)
-
-	// remove participant from database
-	err = ref.Delete(ctx)
-	if err != nil {
-		log.Println("Error deleting participant:", err, event)
-	}
-
 }

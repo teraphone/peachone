@@ -108,10 +108,6 @@ func setupRoomService(app *fiber.App) {
 
 func setupWebhooks(app *fiber.App) {
 	webhooks := app.Group("/v1/webhooks")
-	// SIGNING_KEY := os.Getenv("SIGNING_KEY")
-	// webhooks.Use(jwtware.New(jwtware.Config{
-	// 	SigningKey: []byte(SIGNING_KEY),
-	// }))
 
 	// Livekit webhook handler
 	webhooks.Post("/livekit", routes.LivekitHandler)
