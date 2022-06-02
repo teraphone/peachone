@@ -4,6 +4,7 @@ import (
 	"peachone/database"
 	"peachone/models"
 	"peachone/queries"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -48,7 +49,7 @@ func Signup(c *fiber.Ctx) error {
 
 	// check if email already exists in db
 	user := new(models.User)
-	query := db.Where("email = ?", req.Email).Find(user)
+	query := db.Where("email = ?", strings.ToLower(req.Email)).Find(user)
 	if query.RowsAffected > 0 {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid signup credentials.")
 	}
@@ -60,7 +61,7 @@ func Signup(c *fiber.Ctx) error {
 	}
 
 	user.Name = req.Name
-	user.Email = req.Email
+	user.Email = strings.ToLower(req.Email)
 	user.Password = string(hash)
 
 	db.Create(user)
@@ -124,7 +125,7 @@ func SignupWithInvite(c *fiber.Ctx) error {
 
 	// check if email already exists in db
 	user := new(models.User)
-	query := db.Where("email = ?", req.Email).Find(user)
+	query := db.Where("email = ?", strings.ToLower(req.Email)).Find(user)
 	if query.RowsAffected > 0 {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid signup credentials.")
 	}
@@ -142,7 +143,7 @@ func SignupWithInvite(c *fiber.Ctx) error {
 	}
 
 	user.Name = req.Name
-	user.Email = req.Email
+	user.Email = strings.ToLower(req.Email)
 	user.Password = string(hash)
 
 	db.Create(user)
@@ -216,7 +217,7 @@ func Login(c *fiber.Ctx) error {
 
 	// check if email exists in db
 	user := new(models.User)
-	query := db.Where("email = ?", req.Email).Find(user)
+	query := db.Where("email = ?", strings.ToLower(req.Email)).Find(user)
 	if query.RowsAffected == 0 {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid login credentials.")
 	}
@@ -249,6 +250,3 @@ func Login(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
-
-// TODO:
-// - force email to lowercase before save/lookup
