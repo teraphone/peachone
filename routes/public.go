@@ -5,6 +5,7 @@ import (
 	"peachone/models"
 	"peachone/queries"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -246,6 +247,60 @@ func Login(c *fiber.Ctx) error {
 		Expiration:        expiration,
 		FirebaseAuthToken: firebase_auth_token,
 		User:              *user,
+	}
+	return c.JSON(response)
+
+}
+
+// --------------------------------------------------------------------------------
+// Email Verification request handler
+// --------------------------------------------------------------------------------
+type EmailVerificationRequest struct {
+	Code string
+}
+
+type EmailVerificationResponse struct {
+	Success bool `json:"success"`
+}
+
+func EmailVerification(c *fiber.Ctx) error {
+	// get request body
+	req := new(EmailVerificationRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.Code == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid verification code.")
+	}
+
+	// get database connection
+	db := database.DB.DB
+
+	// check if code exists in db
+	evcode := new(models.EmailVerificationCode)
+	query := db.Where("code = ?", req.Code).Find(evcode)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid verification code.")
+	}
+
+	// check if code has expired
+	if time.Now().Unix() > evcode.ExpiresAt.Unix() {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid verification code.")
+	}
+
+	// get user
+	user := new(models.User)
+	db.Where("id = ?", evcode.UserID).Find(user)
+
+	// update user
+	user.IsVerified = true
+	db.Save(user)
+
+	// return response
+	response := &EmailVerificationResponse{
+		Success: true,
 	}
 	return c.JSON(response)
 
