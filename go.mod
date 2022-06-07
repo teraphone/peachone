@@ -34,6 +34,7 @@ require (
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.1 // indirect
@@ -43,10 +44,14 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/jackc/pgtype v1.9.1 // indirect
 	github.com/jackc/pgx/v4 v4.14.1 // indirect
+	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/jxskiss/base62 v0.0.0-20191017122030-4f11678b909b // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
+	github.com/mailgun/mailgun-go/v4 v4.8.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pion/datachannel v1.5.2 // indirect
 	github.com/pion/dtls/v2 v2.1.2 // indirect
 	github.com/pion/ice/v2 v2.1.20 // indirect
@@ -64,6 +69,7 @@ require (
 	github.com/pion/turn/v2 v2.0.6 // indirect
 	github.com/pion/udp v0.1.1 // indirect
 	github.com/pion/webrtc/v3 v3.1.22 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect

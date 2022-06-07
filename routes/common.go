@@ -16,6 +16,8 @@ import (
 	lksdk "github.com/livekit/server-sdk-go"
 
 	"github.com/livekit/protocol/auth"
+
+	"github.com/mailgun/mailgun-go/v4"
 )
 
 func getIDFromJWT(c *fiber.Ctx) (uint, error) {
@@ -112,4 +114,12 @@ func DecodeRoomName(name string) (uint, uint, error) {
 	}
 
 	return uint(group_id), uint(room_id), nil
+}
+
+func CreateMailgunClient() *mailgun.MailgunImpl {
+	MG_DOMAIN := os.Getenv("MG_DOMAIN")
+	MG_API_KEY := os.Getenv("MG_API_KEY")
+
+	mg := mailgun.NewMailgun(MG_DOMAIN, MG_API_KEY)
+	return mg
 }
