@@ -24,12 +24,33 @@ type Room struct {
 }
 
 type User struct {
+	ID         uint      `gorm:"primary_key" json:"id"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Name       string    `json:"name"`
+	Email      string    `gorm:"unique" json:"email"`
+	Password   string    `json:"-"`
+	IsVerified bool      `json:"is_verified"`
+}
+
+type EmailVerificationCode struct {
 	ID        uint      `gorm:"primary_key" json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	Name      string    `json:"name"`
-	Email     string    `gorm:"unique" json:"email"`
-	Password  string    `json:"-"`
+	ExpiresAt time.Time `json:"expires_at"`
+	Code      string    `json:"code"`
+	UserID    uint      `json:"user_id"` // fk: User.ID
+	Uses      uint      `json:"uses"`
+}
+
+type PasswordResetCode struct {
+	ID        uint      `gorm:"primary_key" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+	Code      string    `json:"code"`
+	UserID    uint      `json:"user_id"` // fk: User.ID
+	Uses      uint      `json:"uses"`
 }
 
 type GroupUser struct {
