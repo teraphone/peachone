@@ -26,6 +26,8 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_room_type_id;",
 		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deployment_zone_id;",
 		"ALTER TABLE rooms DROP CONSTRAINT fk_rooms_deprecation_code_id;",
+		"ALTER TABLE email_verification_codes DROP CONSTRAINT fk_email_verification_codes_user_id;",
+		"ALTER TABLE password_reset_codes DROP CONSTRAINT fk_password_reset_codes_user_id;",
 		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_id;",
 		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_user_id;",
 		"ALTER TABLE group_users DROP CONSTRAINT fk_group_users_group_role_id;",
@@ -116,6 +118,8 @@ func InitDBTables(db *gorm.DB) {
 	db.AutoMigrate(&models.Group{})
 	db.AutoMigrate(&models.Room{})
 	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.EmailVerificationCode{})
+	db.AutoMigrate(&models.PasswordResetCode{})
 	db.AutoMigrate(&models.GroupUser{})
 	db.AutoMigrate(&models.RoomUser{})
 	db.AutoMigrate(&models.GroupInvite{})
@@ -127,6 +131,8 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_room_type_id FOREIGN KEY (room_type_id) REFERENCES room_types(id);",
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_deployment_zone_id FOREIGN KEY (deployment_zone_id) REFERENCES deployment_zones(id);",
 		"ALTER TABLE rooms ADD CONSTRAINT fk_rooms_deprecation_code_id FOREIGN KEY (deprecation_code_id) REFERENCES deprecation_codes(id);",
+		"ALTER TABLE email_verification_codes ADD CONSTRAINT fk_email_verification_codes_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;",
+		"ALTER TABLE password_reset_codes ADD CONSTRAINT fk_password_reset_codes_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;",
 		"ALTER TABLE group_users ADD CONSTRAINT fk_group_users_group_id FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE;",
 		"ALTER TABLE group_users ADD CONSTRAINT fk_group_users_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;",
 		"ALTER TABLE group_users ADD CONSTRAINT fk_group_users_group_role_id FOREIGN KEY (group_role_id) REFERENCES group_roles(id);",
