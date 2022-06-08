@@ -187,3 +187,59 @@ func SendPasswordResetEmail(ctx context.Context, vars *PasswordResetVars) (mes s
 
 	return resp, id, nil
 }
+
+type AccountVerificationVars struct {
+	SenderEmail    string
+	Subject        string
+	RecipientEmail string
+	TemplateVars   *AccountVerificationTemplateVars
+}
+
+type AccountVerificationTemplateVars struct {
+	Name       string
+	Code       string
+	SenderName string
+}
+
+func SendAccountVerificationEmail(ctx context.Context, vars *AccountVerificationVars) (mes string, id string, err error) {
+	// email template
+	htmlAccountVerificationTemplate := `
+<html>
+	<body>
+		<p>Hi {{.Name}},</p>
+		<p>Welcome to Teraphone! To verify your account, please click the link below:</p>
+		<p><a href="https://teraphone.app/email-verification?code={{.Code}}">https://teraphone.app/email-verification?code={{.Code}}</a></p>
+		<p>If you did not sign up for a Teraphone account, you can simply disregard this email.</p>
+		<p>Thanks,</p>
+		<p>{{.SenderName}}</p>
+	</body>
+</html>
+`
+	// create email message
+	mg := CreateMailgunClient()
+	message := mg.NewMessage(vars.SenderEmail, vars.Subject, "", vars.RecipientEmail)
+	parsedHtmlTemplate, err := template.New("body").Parse(htmlAccountVerificationTemplate)
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	var htmlBuffer bytes.Buffer
+	if err := parsedHtmlTemplate.Execute(&htmlBuffer, vars.TemplateVars); err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	message.SetHtml(htmlBuffer.String())
+
+	// send message with 10 second timeout
+	log.Printf("Sending password reset email to %s", vars.RecipientEmail)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	resp, id, err := mg.Send(ctxWithTimeout, message)
+	if err != nil {
+		fmt.Println(err.Error())
+		return resp, id, err
+	}
+	log.Printf("ID: %s Resp: %s", id, resp)
+
+	return resp, id, nil
+}
