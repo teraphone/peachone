@@ -256,7 +256,7 @@ func Login(c *fiber.Ctx) error {
 // Email Verification request handler
 // --------------------------------------------------------------------------------
 type EmailVerificationRequest struct {
-	Code string
+	Code string `json:"code"`
 }
 
 type EmailVerificationResponse struct {
@@ -300,6 +300,65 @@ func EmailVerification(c *fiber.Ctx) error {
 
 	// return response
 	response := &EmailVerificationResponse{
+		Success: true,
+	}
+	return c.JSON(response)
+
+}
+
+// --------------------------------------------------------------------------------
+// Password Reset request handler
+// --------------------------------------------------------------------------------
+type PasswordResetRequest struct {
+	Code        string `json:"code"`
+	NewPassword string `json:"new_password"`
+}
+
+type PasswordResetResponse struct {
+	Success bool `json:"success"`
+}
+
+func PasswordReset(c *fiber.Ctx) error {
+	// get request body
+	req := new(PasswordResetRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.Code == "" || req.NewPassword == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid password reset request.")
+	}
+
+	// get database connection
+	db := database.DB.DB
+
+	// check if code exists in db
+	prcode := new(models.PasswordResetCode)
+	query := db.Where("code = ?", req.Code).Find(prcode)
+	if query.RowsAffected == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid password reset request.")
+	}
+
+	// check if code has expired
+	if time.Now().Unix() > prcode.ExpiresAt.Unix() {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid password reset request.")
+	}
+
+	// get user
+	user := new(models.User)
+	db.Where("id = ?", prcode.UserID).Find(user)
+
+	// hash password, populate user model, save to db
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hash)
+	db.Save(user)
+
+	// return response
+	response := &PasswordResetResponse{
 		Success: true,
 	}
 	return c.JSON(response)
