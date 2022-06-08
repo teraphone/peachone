@@ -424,7 +424,7 @@ func ForgotPassword(c *fiber.Ctx) error {
 	sender := "david@teraphone.app"
 	subject := "[Teraphone]: Instructions for changing your Teraphone password"
 	message := mg.NewMessage(sender, subject, "", req.Email)
-	htmlTemplate := "{{.Name}}, {{.Code}}"
+	htmlTemplate := "{{.Name}}, {{.Code}}" // TODO: finish this
 	templateVars := struct{ Name, Code string }{user.Name, prcode.Code}
 	parsedHtmlTemplate, err := template.New("body").Parse(htmlTemplate)
 	if err != nil {
