@@ -81,6 +81,36 @@ func Signup(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Error creating Firebase auth token.")
 	}
 
+	// create email verification code
+	expiresInHours := uint(24 * 365)
+	evcode := new(models.EmailVerificationCode)
+	evcode.UserID = user.ID
+	code, err := uuid.NewV4()
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	evcode.Code = code.String()
+	evcode.ExpiresAt = time.Now().Add(time.Hour * time.Duration(expiresInHours))
+	db.Create(evcode)
+
+	// send account verification email
+	accountVerificationVars := &AccountVerificationVars{
+		SenderEmail:    "david@teraphone.app",
+		Subject:        "[Teraphone]: Instructions to verify your account",
+		RecipientEmail: user.Email,
+		TemplateVars: &AccountVerificationTemplateVars{
+			Name:       user.Name,
+			Code:       evcode.Code,
+			SenderName: "David Wurtz",
+		},
+	}
+	_, _, err = SendAccountVerificationEmail(c.Context(), accountVerificationVars)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
 	// return response
 	response := &SignupResponse{
 		Success:           true,
@@ -172,6 +202,36 @@ func SignupWithInvite(c *fiber.Ctx) error {
 	// accept invite, create referral
 	err = queries.AcceptInviteAndCreateReferral(db, group_invite, user.ID)
 	if err != nil {
+		return err
+	}
+
+	// create email verification code
+	expiresInHours := uint(24 * 365)
+	evcode := new(models.EmailVerificationCode)
+	evcode.UserID = user.ID
+	code, err := uuid.NewV4()
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	evcode.Code = code.String()
+	evcode.ExpiresAt = time.Now().Add(time.Hour * time.Duration(expiresInHours))
+	db.Create(evcode)
+
+	// send account verification email
+	accountVerificationVars := &AccountVerificationVars{
+		SenderEmail:    "david@teraphone.app",
+		Subject:        "[Teraphone]: Instructions to verify your account",
+		RecipientEmail: user.Email,
+		TemplateVars: &AccountVerificationTemplateVars{
+			Name:       user.Name,
+			Code:       evcode.Code,
+			SenderName: "David Wurtz",
+		},
+	}
+	_, _, err = SendAccountVerificationEmail(c.Context(), accountVerificationVars)
+	if err != nil {
+		fmt.Println(err.Error())
 		return err
 	}
 
