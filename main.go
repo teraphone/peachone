@@ -36,6 +36,9 @@ func setupPublic(app *fiber.App) {
 	public.Post("/signup", routes.Signup)
 	public.Post("/signup-with-invite", routes.SignupWithInvite)
 	public.Post("/login", routes.Login)
+	public.Post("/email-verification", routes.EmailVerification)
+	public.Post("/password-reset", routes.PasswordReset)
+	public.Post("/forgot-password", routes.ForgotPassword)
 }
 
 func setupPrivate(app *fiber.App) {
