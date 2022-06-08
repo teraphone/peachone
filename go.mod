@@ -95,6 +95,7 @@ require (
 
 require (
 	github.com/gofiber/jwt/v3 v3.2.3
+	github.com/gofrs/uuid v4.2.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect

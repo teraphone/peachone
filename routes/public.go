@@ -1,6 +1,11 @@
 package routes
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"html/template"
+	"log"
 	"peachone/database"
 	"peachone/models"
 	"peachone/queries"
@@ -8,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -359,6 +365,92 @@ func PasswordReset(c *fiber.Ctx) error {
 
 	// return response
 	response := &PasswordResetResponse{
+		Success: true,
+	}
+	return c.JSON(response)
+
+}
+
+// --------------------------------------------------------------------------------
+// Forgot Password request handler
+// --------------------------------------------------------------------------------
+type ForgotPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+type ForgotPasswordResponse struct {
+	Success bool `json:"success"`
+}
+
+func ForgotPassword(c *fiber.Ctx) error {
+	// get request body
+	req := new(ForgotPasswordRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.Email == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid forgot password request.")
+	}
+
+	// get database connection
+	db := database.DB.DB
+
+	// check if email exists in db
+	user := new(models.User)
+	query := db.Where("email = ?", strings.ToLower(req.Email)).Find(user)
+	if query.RowsAffected == 0 {
+		response := &ForgotPasswordResponse{
+			Success: true,
+		}
+		return c.JSON(response)
+	}
+
+	// create password reset code
+	prcode := new(models.PasswordResetCode)
+	prcode.UserID = user.ID
+	code, err := uuid.NewV4()
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	prcode.Code = code.String()
+	prcode.ExpiresAt = time.Now().Add(time.Hour * 2)
+	db.Create(prcode)
+
+	// create email message
+	mg := CreateMailgunClient()
+	sender := "david@teraphone.app"
+	subject := "[Teraphone]: Instructions for changing your Teraphone password"
+	message := mg.NewMessage(sender, subject, "", req.Email)
+	htmlTemplate := "{{.Name}}, {{.Code}}"
+	templateVars := struct{ Name, Code string }{user.Name, prcode.Code}
+	parsedHtmlTemplate, err := template.New("body").Parse(htmlTemplate)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	var htmlBuffer bytes.Buffer
+	if err := parsedHtmlTemplate.Execute(&htmlBuffer, templateVars); err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	message.SetHtml(htmlBuffer.String())
+
+	// send message with 10 second timeout
+	log.Printf("Sending password reset email to %s", req.Email)
+	ctx, cancel := context.WithTimeout(c.Context(), time.Second*10)
+	defer cancel()
+	resp, id, err := mg.Send(ctx, message)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	log.Printf("ID: %s Resp: %s", id, resp)
+
+	// return response
+	response := &ForgotPasswordResponse{
 		Success: true,
 	}
 	return c.JSON(response)
