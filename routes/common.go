@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"peachone/models"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -122,4 +124,66 @@ func CreateMailgunClient() *mailgun.MailgunImpl {
 
 	mg := mailgun.NewMailgun(MG_DOMAIN, MG_API_KEY)
 	return mg
+}
+
+type PasswordResetTemplateVars struct {
+	Name           string
+	Email          string
+	Code           string
+	ExpiresInHours uint
+	SenderName     string
+}
+
+type PasswordResetVars struct {
+	SenderEmail  string
+	Subject      string
+	TemplateVars *PasswordResetTemplateVars
+}
+
+func SendPasswordResetEmail(ctx context.Context, vars *PasswordResetVars) (mes string, id string, err error) {
+	// email template
+	htmlPasswordResetTemplate := `
+<html>
+	<body>
+		<p>Hi {{.Name}},</p>
+		<p>You have asked to reset your password for the Teraphone account associated with this email address ({{.Email}}).</p>
+		<p>To reset your password, please click the link below:</p>
+		<p><a href="https://teraphone.app/password-reset?code={{.Code}}">https://teraphone.app/password-reset?code={{.Code}}</a></p>
+		<p>This link will expire in {{.ExpiresInHours}} hours. To re-start the password reset process, click here:</p>
+		<p><a href="https://teraphone.app/forgot-password">https://teraphone.app/forgot-password</a></p>
+		<p>If you didn't make the request, please ignore this email.</p>
+		<p>Thanks,</p>
+		<p>{{.SenderName}}</p>
+		<br />
+		<p>***This is an automatic notification.</p>
+	</body>
+</html>
+`
+	// create email message
+	mg := CreateMailgunClient()
+	message := mg.NewMessage(vars.SenderEmail, vars.Subject, "", vars.TemplateVars.Email)
+	parsedHtmlTemplate, err := template.New("body").Parse(htmlPasswordResetTemplate)
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	var htmlBuffer bytes.Buffer
+	if err := parsedHtmlTemplate.Execute(&htmlBuffer, vars.TemplateVars); err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	message.SetHtml(htmlBuffer.String())
+
+	// send message with 10 second timeout
+	log.Printf("Sending password reset email to %s", vars.TemplateVars.Email)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	resp, id, err := mg.Send(ctxWithTimeout, message)
+	if err != nil {
+		fmt.Println(err.Error())
+		return resp, id, err
+	}
+	log.Printf("ID: %s Resp: %s", id, resp)
+
+	return resp, id, nil
 }

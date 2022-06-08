@@ -1,11 +1,7 @@
 package routes
 
 import (
-	"bytes"
-	"context"
 	"fmt"
-	"html/template"
-	"log"
 	"peachone/database"
 	"peachone/models"
 	"peachone/queries"
@@ -408,6 +404,7 @@ func ForgotPassword(c *fiber.Ctx) error {
 	}
 
 	// create password reset code
+	expiresInHours := uint(2)
 	prcode := new(models.PasswordResetCode)
 	prcode.UserID = user.ID
 	code, err := uuid.NewV4()
@@ -416,38 +413,26 @@ func ForgotPassword(c *fiber.Ctx) error {
 		return err
 	}
 	prcode.Code = code.String()
-	prcode.ExpiresAt = time.Now().Add(time.Hour * 2)
+	prcode.ExpiresAt = time.Now().Add(time.Hour * time.Duration(expiresInHours))
 	db.Create(prcode)
 
-	// create email message
-	mg := CreateMailgunClient()
-	sender := "david@teraphone.app"
-	subject := "[Teraphone]: Instructions for changing your Teraphone password"
-	message := mg.NewMessage(sender, subject, "", req.Email)
-	htmlTemplate := "{{.Name}}, {{.Code}}" // TODO: finish this
-	templateVars := struct{ Name, Code string }{user.Name, prcode.Code}
-	parsedHtmlTemplate, err := template.New("body").Parse(htmlTemplate)
+	// send password reset email
+	passwordRestVars := &PasswordResetVars{
+		SenderEmail: "david@teraphone.app",
+		Subject:     "[Teraphone]: Instructions for changing your Teraphone password",
+		TemplateVars: &PasswordResetTemplateVars{
+			Name:           user.Name,
+			Email:          user.Email,
+			Code:           prcode.Code,
+			ExpiresInHours: expiresInHours,
+			SenderName:     "David Wurtz",
+		},
+	}
+	_, _, err = SendPasswordResetEmail(c.Context(), passwordRestVars)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
-	var htmlBuffer bytes.Buffer
-	if err := parsedHtmlTemplate.Execute(&htmlBuffer, templateVars); err != nil {
-		fmt.Println(err.Error())
-		return err
-	}
-	message.SetHtml(htmlBuffer.String())
-
-	// send message with 10 second timeout
-	log.Printf("Sending password reset email to %s", req.Email)
-	ctx, cancel := context.WithTimeout(c.Context(), time.Second*10)
-	defer cancel()
-	resp, id, err := mg.Send(ctx, message)
-	if err != nil {
-		fmt.Println(err.Error())
-		return err
-	}
-	log.Printf("ID: %s Resp: %s", id, resp)
 
 	// return response
 	response := &ForgotPasswordResponse{
