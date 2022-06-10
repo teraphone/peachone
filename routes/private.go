@@ -22,10 +22,10 @@ func RefreshToken(c *fiber.Ctx) error {
 	// extract user id from JWT claims
 	id, _ := getIDFromJWT(c)
 
-	// create refreshed JWT token
+	// create refreshed access token
 	user := new(models.User)
 	user.ID = id
-	fresh_token, expiration, err := createJWTToken(user)
+	fresh_token, expiration, err := createAccessToken(user)
 	if err != nil {
 		return err
 	}

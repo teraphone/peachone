@@ -69,10 +69,10 @@ func Signup(c *fiber.Ctx) error {
 
 	db.Create(user)
 
-	// create JWT token
-	token, expiration, err := createJWTToken(user)
+	// create access token
+	token, expiration, err := createAccessToken(user)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error creating JWT token.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating access token.")
 	}
 
 	// create firebase auth token
@@ -181,10 +181,10 @@ func SignupWithInvite(c *fiber.Ctx) error {
 
 	db.Create(user)
 
-	// create JWT token
-	token, expiration, err := createJWTToken(user)
+	// create access token
+	token, expiration, err := createAccessToken(user)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error creating JWT token.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating access token.")
 	}
 
 	// create firebase auth token
@@ -290,10 +290,10 @@ func Login(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid login credentials.")
 	}
 
-	// create JWT token
-	token, expiration, err := createJWTToken(user)
+	// create access token
+	token, expiration, err := createAccessToken(user)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Error creating JWT token.")
+		return fiber.NewError(fiber.StatusInternalServerError, "Error creating access token.")
 	}
 
 	// create firebase auth token
