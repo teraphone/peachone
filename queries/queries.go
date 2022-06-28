@@ -89,6 +89,12 @@ func AddUserToGroupAndRooms(db *gorm.DB, user_id uint, group_id uint) error {
 	if tx.Error != nil {
 		return tx.Error
 	}
+
+	// early return if no rooms
+	if len(rooms) == 0 {
+		return nil
+	}
+
 	room_users := []models.RoomUser{}
 	for _, room := range rooms {
 		room_user := &models.RoomUser{
