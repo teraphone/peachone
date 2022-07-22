@@ -38,8 +38,8 @@ type TenantTeam struct {
 }
 
 type TeamUser struct {
-	Id  string `gorm:"primary_key" json:"id"` // fk: TenantTeam.Id
-	Oid string `json:"oid"`                   // fk: TenantUser.Oid
+	Id  string `gorm:"primary_key" json:"id"`  // fk: TenantTeam.Id
+	Oid string `gorm:"primary_key" json:"oid"` // fk: TenantUser.Oid
 }
 
 type TeamRoom struct {
