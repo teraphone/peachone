@@ -1,8 +1,11 @@
 package routes
 
 import (
+	"fmt"
+	"peachone/auth"
 	"peachone/models"
 
+	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/confidential"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -16,7 +19,6 @@ func PublicWelcome(c *fiber.Ctx) error {
 // --------------------------------------------------------------------------------
 type LoginRequest struct {
 	MSAccessToken string `json:"msAccessToken"`
-	IdToken       string `json:"idToken"`
 }
 
 type LoginResponse struct {
@@ -36,9 +38,34 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// validate request body
-	if req.MSAccessToken == "" || req.IdToken == "" {
+	if req.MSAccessToken == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid login credentials.")
 	}
+
+	// authenticate with on-behalf-of flow
+	cred, err := confidential.NewCredFromSecret(auth.Config.ClientSecret)
+	if err != nil {
+		fmt.Println("Error creating credential:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
+	}
+
+	app, err := confidential.New(
+		auth.Config.ClientID, cred,
+		confidential.WithAuthority(auth.Config.Authority),
+	)
+	if err != nil {
+		fmt.Println("Error creating auth client:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
+	}
+
+	authResult, err := app.AcquireTokenOnBehalfOf(c.Context(), req.MSAccessToken, auth.Config.Scopes)
+	if err != nil {
+		fmt.Println("Error acquiring token on-behalf-of user:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
+	}
+
+	// log authResult
+	fmt.Println("Auth result:", authResult)
 
 	// return response
 	response := &LoginResponse{

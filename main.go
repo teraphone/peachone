@@ -43,6 +43,9 @@ func setupPrivate(app *fiber.App) {
 		SigningKey: []byte(SIGNING_KEY),
 	}))
 
+	// Private endpoints
+	private.Get("/", routes.PrivateWelcome)
+
 }
 
 func setupRoomService(app *fiber.App) {
