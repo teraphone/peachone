@@ -20,7 +20,7 @@ var DBClient *db.Client
 
 func InitFirebaseApp(ctx context.Context) {
 	conf := &firebase.Config{
-		DatabaseURL: "https://dally-arty.firebaseio.com",
+		DatabaseURL: "https://arty-dev.firebaseio.com/",
 	}
 
 	SERVICE_ACCOUNT_JSON := os.Getenv("SERVICE_ACCOUNT_JSON")
