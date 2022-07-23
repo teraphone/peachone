@@ -19,6 +19,7 @@ require (
 	cloud.google.com/go/firestore v1.6.1 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
 	cloud.google.com/go/storage v1.10.0 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v0.5.3 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bep/debounce v1.2.0 // indirect
@@ -29,6 +30,7 @@ require (
 	github.com/go-logr/logr v1.1.0 // indirect
 	github.com/go-logr/stdr v1.0.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.3 // indirect
+	github.com/golang-jwt/jwt v3.2.1+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
@@ -47,6 +49,7 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/jxskiss/base62 v0.0.0-20191017122030-4f11678b909b // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
 	github.com/mailgun/mailgun-go/v4 v4.8.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
