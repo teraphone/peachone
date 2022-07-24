@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"fmt"
 	"peachone/auth"
 	"peachone/models"
@@ -64,8 +65,14 @@ func Login(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
 	}
 
-	// log authResult
-	fmt.Println("Auth result:", authResult)
+	authResultJSON, err := json.MarshalIndent(authResult, "", "  ")
+	if err != nil {
+		fmt.Println("Error marshalling auth result:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
+	}
+
+	// log authResultJSON
+	fmt.Println("Auth result:", string(authResultJSON))
 
 	// return response
 	response := &LoginResponse{
