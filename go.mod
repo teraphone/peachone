@@ -26,6 +26,7 @@ require (
 	github.com/bep/debounce v1.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cjlapao/common-go v0.0.20 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/eapache/channels v1.1.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
@@ -57,6 +58,11 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/microsoft/kiota-abstractions-go v0.8.1 // indirect
 	github.com/microsoft/kiota-authentication-azure-go v0.3.1 // indirect
+	github.com/microsoft/kiota-http-go v0.5.2 // indirect
+	github.com/microsoft/kiota-serialization-json-go v0.5.5 // indirect
+	github.com/microsoft/kiota-serialization-text-go v0.4.1 // indirect
+	github.com/microsoftgraph/msgraph-sdk-go v0.31.0 // indirect
+	github.com/microsoftgraph/msgraph-sdk-go-core v0.26.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pion/datachannel v1.5.2 // indirect
@@ -77,10 +83,12 @@ require (
 	github.com/pion/udp v0.1.1 // indirect
 	github.com/pion/webrtc/v3 v3.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/stretchr/testify v1.7.2 // indirect
 	github.com/thoas/go-funk v0.9.0 // indirect
 	github.com/twitchtv/twirp v8.1.0+incompatible // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
