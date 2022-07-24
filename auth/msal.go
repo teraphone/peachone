@@ -37,6 +37,8 @@ var Config = &MSALConfig{
 	ClientSecret: os.Getenv("MSAL_CLIENT_SECRET"),
 }
 
+var AuthResult = &confidential.AuthResult{}
+
 type TokenCredentialHelper struct {
 	app             *confidential.Client
 	userAccessToken string
@@ -51,6 +53,7 @@ func (helper *TokenCredentialHelper) GetToken(ctx context.Context, options polic
 		return azcore.AccessToken{}, err
 	}
 	helper.authResult = &authResult
+	AuthResult = &authResult
 
 	authResultJSON, err := json.MarshalIndent(authResult, "", "  ")
 	if err != nil {
