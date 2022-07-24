@@ -2,12 +2,16 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/confidential"
+
+	kiota "github.com/microsoft/kiota-authentication-azure-go"
+	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 )
 
 type MSALConfig struct {
@@ -48,6 +52,12 @@ func (helper *TokenCredentialHelper) GetToken(ctx context.Context, options polic
 	}
 	helper.authResult = &authResult
 
+	authResultJSON, err := json.MarshalIndent(authResult, "", "  ")
+	if err != nil {
+		fmt.Println("Error marshalling auth result:", err)
+	}
+	fmt.Println("Auth result:", string(authResultJSON))
+
 	accessToken := azcore.AccessToken{
 		Token:     authResult.AccessToken,
 		ExpiresOn: authResult.ExpiresOn,
@@ -77,4 +87,39 @@ func NewTokenCredentialHelper(userAccessToken string) (*TokenCredentialHelper, e
 		app:             &app,
 		userAccessToken: userAccessToken,
 	}, nil
+}
+
+func NewOBOProvider(userAccessToken string) (*kiota.AzureIdentityAuthenticationProvider, error) {
+	cred, err := NewTokenCredentialHelper(userAccessToken)
+	if err != nil {
+		fmt.Println("Error creating credential:", err)
+		return nil, err
+	}
+
+	provider, err := kiota.NewAzureIdentityAuthenticationProviderWithScopes(cred, Config.Scopes)
+	if err != nil {
+		fmt.Println("Error creating auth provider:", err)
+		return nil, err
+	}
+
+	return provider, nil
+
+}
+
+func NewMSGraphClient(userAccessToken string) (*msgraphsdk.GraphServiceClient, error) {
+	auth, err := NewOBOProvider(userAccessToken)
+	if err != nil {
+		fmt.Println("Error creating auth provider:", err)
+		return nil, err
+	}
+
+	adapter, err := msgraphsdk.NewGraphRequestAdapter(auth)
+	if err != nil {
+		fmt.Println("Error creating adapter:", err)
+		return nil, err
+	}
+
+	client := msgraphsdk.NewGraphServiceClient(adapter)
+
+	return client, nil
 }
