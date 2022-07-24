@@ -32,7 +32,7 @@ type MSALConfig struct {
 var Config = &MSALConfig{
 	ClientID:     "9ef60b2f-3246-4390-8e17-a57478e7ec45",
 	Authority:    "https://login.microsoftonline.com/common",
-	Scopes:       []string{"User.Read", "openid", "profile", "email"},
+	Scopes:       []string{"User.Read", "Team.ReadBasic.All", "openid", "profile", "email"},
 	RedirectURI:  "http://localhost:8080",
 	ClientSecret: os.Getenv("MSAL_CLIENT_SECRET"),
 }
@@ -55,16 +55,22 @@ func (helper *TokenCredentialHelper) GetToken(ctx context.Context, options polic
 	helper.authResult = &authResult
 	AuthResult = &authResult
 
-	authResultJSON, err := json.MarshalIndent(authResult, "", "  ")
-	if err != nil {
-		fmt.Println("Error marshalling auth result:", err)
-	}
-	fmt.Println("Auth result:", string(authResultJSON))
+	// authResultJSON, err := json.MarshalIndent(authResult, "", "  ")
+	// if err != nil {
+	// 	fmt.Println("Error marshalling auth result:", err)
+	// }
+	// fmt.Println("Auth result:", string(authResultJSON))
 
 	accessToken := azcore.AccessToken{
 		Token:     authResult.AccessToken,
 		ExpiresOn: authResult.ExpiresOn,
 	}
+
+	accessTokenJSON, err := json.MarshalIndent(accessToken, "", "  ")
+	if err != nil {
+		fmt.Println("Error marshalling access token:", err)
+	}
+	fmt.Println("Access token:", string(accessTokenJSON))
 
 	return accessToken, nil
 
