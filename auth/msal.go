@@ -1,6 +1,14 @@
 package auth
 
-import "os"
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/confidential"
+)
 
 type MSALConfig struct {
 	ClientID            string   `json:"clientId"`
@@ -23,4 +31,50 @@ var Config = &MSALConfig{
 	Scopes:       []string{"User.Read", "openid", "profile", "email"},
 	RedirectURI:  "http://localhost:8080",
 	ClientSecret: os.Getenv("MSAL_CLIENT_SECRET"),
+}
+
+type TokenCredentialHelper struct {
+	app             *confidential.Client
+	userAccessToken string
+	authResult      *confidential.AuthResult
+}
+
+// implements azcore.TokenCredential interface
+func (helper *TokenCredentialHelper) GetToken(ctx context.Context, options policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	authResult, err := helper.app.AcquireTokenOnBehalfOf(ctx, helper.userAccessToken, Config.Scopes)
+	if err != nil {
+		fmt.Println("Error acquiring token on-behalf-of user:", err)
+		return azcore.AccessToken{}, err
+	}
+	helper.authResult = &authResult
+
+	accessToken := azcore.AccessToken{
+		Token:     authResult.AccessToken,
+		ExpiresOn: authResult.ExpiresOn,
+	}
+
+	return accessToken, nil
+
+}
+
+func NewTokenCredentialHelper(userAccessToken string) (*TokenCredentialHelper, error) {
+	cred, err := confidential.NewCredFromSecret(Config.ClientSecret)
+	if err != nil {
+		fmt.Println("Error creating credential:", err)
+		return nil, err
+	}
+
+	app, err := confidential.New(
+		Config.ClientID, cred,
+		confidential.WithAuthority(Config.Authority),
+	)
+	if err != nil {
+		fmt.Println("Error creating auth client:", err)
+		return nil, err
+	}
+
+	return &TokenCredentialHelper{
+		app:             &app,
+		userAccessToken: userAccessToken,
+	}, nil
 }
