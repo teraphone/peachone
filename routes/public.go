@@ -6,7 +6,6 @@ import (
 	"peachone/auth"
 	"peachone/models"
 
-	"github.com/AzureAD/microsoft-authentication-library-for-go/apps/confidential"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -44,35 +43,33 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// authenticate with on-behalf-of flow
-	cred, err := confidential.NewCredFromSecret(auth.Config.ClientSecret)
+	client, err := auth.NewMSGraphClient(req.MSAccessToken)
 	if err != nil {
-		fmt.Println("Error creating credential:", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
+		return fiber.NewError(fiber.StatusInternalServerError, "Could not authenticate.")
 	}
 
-	app, err := confidential.New(
-		auth.Config.ClientID, cred,
-		confidential.WithAuthority(auth.Config.Authority),
-	)
-	if err != nil {
-		fmt.Println("Error creating auth client:", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
+	// GET https://graph.microsoft.com/v1.0/me
+	me := client.Me()
+	joinedTeamsReq := me.JoinedTeams()
+	result, errObj := joinedTeamsReq.Get()
+	if errObj != nil {
+		errJSON, _ := json.MarshalIndent(errObj, "", "  ")
+		fmt.Println("Error making request:", errJSON)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+	// process result
+	teamables := result.GetValue()
+	teams := make([]models.TenantTeam, len(teamables))
+	for i, teamable := range teamables {
+		teams[i] = models.TenantTeam{
+			Id:          ReadString(teamable.GetId()),
+			Tid:         ReadString(teamable.GetTenantId()),
+			DisplayName: ReadString(teamable.GetDisplayName()),
+			Description: ReadString(teamable.GetDescription()),
+		}
 	}
 
-	authResult, err := app.AcquireTokenOnBehalfOf(c.Context(), req.MSAccessToken, auth.Config.Scopes)
-	if err != nil {
-		fmt.Println("Error acquiring token on-behalf-of user:", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
-	}
-
-	authResultJSON, err := json.MarshalIndent(authResult, "", "  ")
-	if err != nil {
-		fmt.Println("Error marshalling auth result:", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "Authentication failed")
-	}
-
-	// log authResultJSON
-	fmt.Println("Auth result:", string(authResultJSON))
+	fmt.Println("teams:", teams)
 
 	// return response
 	response := &LoginResponse{
