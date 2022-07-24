@@ -204,3 +204,10 @@ func SendAccountVerificationEmail(ctx context.Context, vars *AccountVerification
 
 	return resp, id, nil
 }
+
+func ReadString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
