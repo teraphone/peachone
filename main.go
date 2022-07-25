@@ -32,13 +32,8 @@ func setupPublic(app *fiber.App) {
 	// Welcome endpoint
 	public.Get("/", routes.PublicWelcome)
 
-	// User endpoints
-	public.Post("/signup", routes.Signup)
-	public.Post("/signup-with-invite", routes.SignupWithInvite)
+	// Public endpoints
 	public.Post("/login", routes.Login)
-	public.Post("/email-verification", routes.EmailVerification)
-	public.Post("/password-reset", routes.PasswordReset)
-	public.Post("/forgot-password", routes.ForgotPassword)
 }
 
 func setupPrivate(app *fiber.App) {
@@ -48,50 +43,8 @@ func setupPrivate(app *fiber.App) {
 		SigningKey: []byte(SIGNING_KEY),
 	}))
 
-	// Welcome endpoint
+	// Private endpoints
 	private.Get("/", routes.PrivateWelcome)
-
-	// Auth endpoint
-	private.Get("/auth", routes.RefreshToken)
-
-	// Groups endpoints
-	private.Post("/groups", routes.CreateGroup)
-	private.Get("/groups", routes.GetGroups)
-
-	private.Get("/groups/:group_id", routes.GetGroup)
-	private.Patch("/groups/:group_id", routes.UpdateGroup)
-	private.Delete("/groups/:group_id", routes.DeleteGroup)
-
-	private.Post("/groups/:group_id/users", routes.CreateGroupUser)
-	private.Get("/groups/:group_id/users", routes.GetGroupUsers)
-
-	private.Get("/groups/:group_id/users/:user_id", routes.GetGroupUser)
-	private.Patch("/groups/:group_id/users/:user_id", routes.UpdateGroupUser)
-	private.Delete("/groups/:group_id/users/:user_id", routes.DeleteGroupUser)
-
-	private.Post("/groups/:group_id/invites", routes.CreateGroupInvite)
-	private.Get("/groups/:group_id/invites", routes.GetGroupInvites)
-
-	private.Get("/groups/:group_id/invites/:invite_id", routes.GetGroupInvite)
-	private.Delete("/groups/:group_id/invites/:invite_id", routes.DeleteGroupInvite)
-
-	private.Post("/groups/:group_id/rooms", routes.CreateRoom)
-	private.Get("/groups/:group_id/rooms", routes.GetRooms)
-
-	private.Get("/groups/:group_id/rooms/:room_id", routes.GetRoom)
-	private.Delete("/groups/:group_id/rooms/:room_id", routes.DeleteRoom)
-	private.Patch("/groups/:group_id/rooms/:room_id", routes.UpdateRoom)
-
-	private.Get("/groups/:group_id/rooms/:room_id/users", routes.GetRoomUsers)
-
-	private.Get("/groups/:group_id/rooms/:room_id/users/:user_id", routes.GetRoomUser)
-	private.Patch("/groups/:group_id/rooms/:room_id/users/:user_id", routes.UpdateRoomUser)
-
-	// Invites endpoints
-	private.Post("/invites", routes.AcceptGroupInvite)
-
-	// World endpoints
-	private.Get("/world", routes.GetWorld)
 
 }
 
@@ -103,9 +56,8 @@ func setupRoomService(app *fiber.App) {
 	}))
 
 	// Rooms endpoints
-	roomservice.Get("/rooms", routes.GetLiveKitRooms)
-	roomservice.Get("/rooms/:group_id/:room_id/join", routes.JoinLiveKitRoom)
-	roomservice.Get("/rooms/:group_id/:room_id", routes.GetLiveKitRoomParticipants)
+	roomservice.Get("/rooms/:teamId/:roomId/join", routes.JoinLiveKitRoom)
+	roomservice.Get("/rooms/:teamId/:roomId", routes.GetLiveKitRoomParticipants)
 
 }
 

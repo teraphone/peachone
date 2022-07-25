@@ -1,70 +1,79 @@
 package models
 
-var RoomTypeMap = map[string]uint{
-	"public":  1,
-	"private": 2,
-	"secret":  3,
+type LicenseStatus int
+
+const (
+	Inactive LicenseStatus = iota
+	Suspended
+	Pending
+	Active
+)
+
+func (s LicenseStatus) String() string {
+	switch s {
+	case Inactive:
+		return "inactive"
+	case Suspended:
+		return "suspended"
+	case Pending:
+		return "pending"
+	case Active:
+		return "active"
+	default:
+		return "unknown"
+	}
 }
 
-type RoomType struct {
-	ID   uint
-	Type string // must initialize: "public", "private", "secret"
+type LicensePlan int
+
+const (
+	Standard LicensePlan = iota
+	Professional
+)
+
+func (s LicensePlan) String() string {
+	switch s {
+	case Standard:
+		return "standard"
+	case Professional:
+		return "professional"
+	default:
+		return "unknown"
+	}
 }
 
-var DeploymentZoneMap = map[string]uint{
-	"us-west1-b": 1,
+type DeploymentZone int
+
+const (
+	USWest1B DeploymentZone = iota
+)
+
+func (s DeploymentZone) String() string {
+	switch s {
+	case USWest1B:
+		return "us-west-1b"
+	default:
+		return "unknown"
+	}
 }
 
-type DeploymentZone struct {
-	ID   uint
-	Zone string // must initialize: "us-west1-b"
-}
+type RoomType int
 
-var DeprecationCodeMap = map[string]uint{
-	"active":   1,
-	"inactive": 2,
-}
+const (
+	Public RoomType = iota
+	Private
+	Secret
+)
 
-type DeprecationCode struct {
-	ID   uint
-	Code string // must initialize: "active", "inactive"
-}
-
-var RoomRoleMap = map[string]uint{
-	"banned":    1,
-	"guest":     2,
-	"member":    3,
-	"moderator": 4,
-	"admin":     5,
-	"owner":     6,
-}
-
-type RoomRole struct {
-	ID   uint
-	Role string // must initialize: "banned", "guest", "member", "moderator", "admin", "owner"
-}
-
-var GroupRoleMap = map[string]uint{
-	"banned":    1,
-	"guest":     2,
-	"member":    3,
-	"moderator": 4,
-	"admin":     5,
-	"owner":     6,
-}
-
-type GroupRole struct {
-	ID   uint
-	Role string // must initialize: "banned", "guest", "member", "moderator", "admin", "owner"
-}
-
-var InviteStatusMap = map[string]uint{
-	"pending":  1,
-	"accepted": 2,
-	"expired":  3,
-}
-
-type InviteStatus struct {
-	ID     uint
-	Status string // must initialize: "pending", "accepted", "expired"
+func (s RoomType) String() string {
+	switch s {
+	case Public:
+		return "public"
+	case Private:
+		return "private"
+	case Secret:
+		return "secret"
+	default:
+		return "unknown"
+	}
 }
