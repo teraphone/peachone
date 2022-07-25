@@ -36,12 +36,10 @@ var Config = &MSALConfig{
 	ClientSecret: os.Getenv("MSAL_CLIENT_SECRET"),
 }
 
-var UserAuth = &confidential.AuthResult{}
-
 type TokenCredentialHelper struct {
 	app             *confidential.Client
 	userAccessToken string
-	authResult      *confidential.AuthResult
+	UserAuth        *confidential.AuthResult
 }
 
 // implements azcore.TokenCredential interface
@@ -51,25 +49,12 @@ func (helper *TokenCredentialHelper) GetToken(ctx context.Context, options polic
 		fmt.Println("Error acquiring token on-behalf-of user:", err)
 		return azcore.AccessToken{}, err
 	}
-	helper.authResult = &authResult
-	UserAuth = &authResult
-
-	// authResultJSON, err := json.MarshalIndent(authResult, "", "  ")
-	// if err != nil {
-	// 	fmt.Println("Error marshalling auth result:", err)
-	// }
-	// fmt.Println("Auth result:", string(authResultJSON))
+	helper.UserAuth = &authResult
 
 	accessToken := azcore.AccessToken{
 		Token:     authResult.AccessToken,
 		ExpiresOn: authResult.ExpiresOn,
 	}
-
-	// accessTokenJSON, err := json.MarshalIndent(accessToken, "", "  ")
-	// if err != nil {
-	// 	fmt.Println("Error marshalling access token:", err)
-	// }
-	// fmt.Println("Access token:", string(accessTokenJSON))
 
 	return accessToken, nil
 
@@ -97,37 +82,37 @@ func NewTokenCredentialHelper(userAccessToken string) (*TokenCredentialHelper, e
 	}, nil
 }
 
-func NewOBOProvider(userAccessToken string) (*kiota.AzureIdentityAuthenticationProvider, error) {
+func NewOBOProvider(userAccessToken string) (*TokenCredentialHelper, *kiota.AzureIdentityAuthenticationProvider, error) {
 	cred, err := NewTokenCredentialHelper(userAccessToken)
 	if err != nil {
 		fmt.Println("Error creating credential:", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	provider, err := kiota.NewAzureIdentityAuthenticationProviderWithScopes(cred, Config.Scopes)
 	if err != nil {
 		fmt.Println("Error creating auth provider:", err)
-		return nil, err
+		return nil, nil, err
 	}
 
-	return provider, nil
+	return cred, provider, nil
 
 }
 
-func NewMSGraphClient(userAccessToken string) (*msgraphsdk.GraphServiceClient, error) {
-	auth, err := NewOBOProvider(userAccessToken)
+func NewMSGraphClient(userAccessToken string) (*TokenCredentialHelper, *msgraphsdk.GraphServiceClient, error) {
+	cred, auth, err := NewOBOProvider(userAccessToken)
 	if err != nil {
 		fmt.Println("Error creating auth provider:", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	adapter, err := msgraphsdk.NewGraphRequestAdapter(auth)
 	if err != nil {
 		fmt.Println("Error creating adapter:", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	client := msgraphsdk.NewGraphServiceClient(adapter)
 
-	return client, nil
+	return cred, client, nil
 }
