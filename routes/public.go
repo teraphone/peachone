@@ -87,8 +87,9 @@ func Login(c *fiber.Ctx) error {
 	// check if user exists
 	query := db.Where("oid = ?", user.Oid).Find(user)
 	if query.RowsAffected == 0 {
-		// db.Create(user)
+		// SetUpNewUserAndLicense(db, user)
 		fmt.Println("create user:", user)
+		fmt.Println("create user license")
 	}
 
 	// for each team (todo: finish this)
