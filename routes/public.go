@@ -6,6 +6,7 @@ import (
 	"peachone/auth"
 	"peachone/database"
 	"peachone/models"
+	"peachone/queries"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -92,9 +93,16 @@ func Login(c *fiber.Ctx) error {
 	// check if user exists
 	query := db.Where("oid = ?", user.Oid).Find(user)
 	if query.RowsAffected == 0 {
-		// SetUpNewUserAndLicense(db, user) todo: finish this
+		queries.SetUpNewUserAndLicense(db, user, license)
 		fmt.Println("create user:", user)
-		fmt.Println("create user license")
+		fmt.Println("create user license:", license)
+	} else {
+		// get user license
+		query = db.Where("oid = ?", user.Oid).Find(license)
+		if query.RowsAffected == 0 {
+			fmt.Println("license not found for user:", user)
+			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+		}
 	}
 
 	// for each team
