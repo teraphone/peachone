@@ -23,12 +23,14 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Success           bool              `json:"success"`
-	AccessToken       string            `json:"accessToken"`
-	Expiration        int64             `json:"expiration"`
-	RefreshToken      string            `json:"refreshToken"`
-	FirebaseAuthToken string            `json:"firebaseAuthToken"`
-	User              models.TenantUser `json:"user"`
+	Success                bool               `json:"success"`
+	AccessToken            string             `json:"accessToken"`
+	AccessTokenExpiration  int64              `json:"accessTokenExpiration"`
+	RefreshToken           string             `json:"refreshToken"`
+	RefreshTokenExpiration int64              `json:"refreshTokenExpiration"`
+	FirebaseAuthToken      string             `json:"firebaseAuthToken"`
+	User                   models.TenantUser  `json:"user"`
+	License                models.UserLicense `json:"license"`
 }
 
 func Login(c *fiber.Ctx) error {
@@ -81,23 +83,26 @@ func Login(c *fiber.Ctx) error {
 	}
 	fmt.Println("user from cred.UserAuth:", user)
 
+	// user license
+	license := &models.UserLicense{}
+
 	// get database connection
 	db := database.DB.DB
 
 	// check if user exists
 	query := db.Where("oid = ?", user.Oid).Find(user)
 	if query.RowsAffected == 0 {
-		// SetUpNewUserAndLicense(db, user)
+		// SetUpNewUserAndLicense(db, user) todo: finish this
 		fmt.Println("create user:", user)
 		fmt.Println("create user license")
 	}
 
-	// for each team (todo: finish this)
+	// for each team
 	for _, team := range teams {
 		// check if team exists
 		query := db.Where("id = ?", team.Id).Find(team)
 		if query.RowsAffected == 0 {
-			// SetUpNewTeamAndRooms(db, team)
+			// SetUpNewTeamAndRooms(db, team) todo: finish this
 			fmt.Println("create team:", team)
 			fmt.Println("create team rooms")
 		}
@@ -114,9 +119,37 @@ func Login(c *fiber.Ctx) error {
 		}
 	}
 
+	// create access token
+	accessToken, accessTokenExp, err := createAccessToken(user)
+	if err != nil {
+		fmt.Println("error creating access token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	// create refresh token
+	refreshToken, refreshTokenExpiration, err := createRefreshToken(user)
+	if err != nil {
+		fmt.Println("error creating refresh token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	// create firebase auth token
+	firebaseAuthToken, err := createFirebaseAuthToken(c.Context(), user.Oid)
+	if err != nil {
+		fmt.Println("error creating firebase auth token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
 	// return response
 	response := &LoginResponse{
-		Success: true,
+		Success:                true,
+		AccessToken:            accessToken,
+		AccessTokenExpiration:  accessTokenExp,
+		RefreshToken:           refreshToken,
+		RefreshTokenExpiration: refreshTokenExpiration,
+		FirebaseAuthToken:      firebaseAuthToken,
+		User:                   *user,
+		License:                *license,
 	}
 	return c.JSON(response)
 
