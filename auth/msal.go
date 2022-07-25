@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -37,7 +36,7 @@ var Config = &MSALConfig{
 	ClientSecret: os.Getenv("MSAL_CLIENT_SECRET"),
 }
 
-var AuthResult = &confidential.AuthResult{}
+var UserAuth = &confidential.AuthResult{}
 
 type TokenCredentialHelper struct {
 	app             *confidential.Client
@@ -53,7 +52,7 @@ func (helper *TokenCredentialHelper) GetToken(ctx context.Context, options polic
 		return azcore.AccessToken{}, err
 	}
 	helper.authResult = &authResult
-	AuthResult = &authResult
+	UserAuth = &authResult
 
 	// authResultJSON, err := json.MarshalIndent(authResult, "", "  ")
 	// if err != nil {
@@ -66,11 +65,11 @@ func (helper *TokenCredentialHelper) GetToken(ctx context.Context, options polic
 		ExpiresOn: authResult.ExpiresOn,
 	}
 
-	accessTokenJSON, err := json.MarshalIndent(accessToken, "", "  ")
-	if err != nil {
-		fmt.Println("Error marshalling access token:", err)
-	}
-	fmt.Println("Access token:", string(accessTokenJSON))
+	// accessTokenJSON, err := json.MarshalIndent(accessToken, "", "  ")
+	// if err != nil {
+	// 	fmt.Println("Error marshalling access token:", err)
+	// }
+	// fmt.Println("Access token:", string(accessTokenJSON))
 
 	return accessToken, nil
 
