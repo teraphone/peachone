@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"peachone/auth"
+	"peachone/database"
 	"peachone/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -43,12 +44,12 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// authenticate with on-behalf-of flow
-	client, err := auth.NewMSGraphClient(req.MSAccessToken)
+	cred, client, err := auth.NewMSGraphClient(req.MSAccessToken)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "Could not authenticate.")
 	}
 
-	// GET https://graph.microsoft.com/v1.0/me
+	// get joined teams
 	me := client.Me()
 	joinedTeamsReq := me.JoinedTeams()
 	result, errObj := joinedTeamsReq.Get()
@@ -57,6 +58,7 @@ func Login(c *fiber.Ctx) error {
 		fmt.Println("Error making request:", errJSON)
 		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 	}
+
 	// process result
 	teamables := result.GetValue()
 	teams := make([]models.TenantTeam, len(teamables))
@@ -68,8 +70,48 @@ func Login(c *fiber.Ctx) error {
 			Description: ReadString(teamable.GetDescription()),
 		}
 	}
-
 	fmt.Println("teams:", teams)
+
+	// get user from IDToken
+	user := &models.TenantUser{
+		Oid:   cred.UserAuth.IDToken.Oid,
+		Name:  cred.UserAuth.IDToken.Name,
+		Email: cred.UserAuth.IDToken.Email,
+		Tid:   cred.UserAuth.IDToken.TenantID,
+	}
+	fmt.Println("user from cred.UserAuth:", user)
+
+	// get database connection
+	db := database.DB.DB
+
+	// check if user exists
+	query := db.Where("oid = ?", user.Oid).Find(user)
+	if query.RowsAffected == 0 {
+		// db.Create(user)
+		fmt.Println("create user:", user)
+	}
+
+	// for each team (todo: finish this)
+	for _, team := range teams {
+		// check if team exists
+		query := db.Where("id = ?", team.Id).Find(team)
+		if query.RowsAffected == 0 {
+			// SetUpNewTeamAndRooms(db, team)
+			fmt.Println("create team:", team)
+			fmt.Println("create team rooms")
+		}
+
+		// check if user exists in team
+		teamUser := &models.TeamUser{
+			Id:  team.Id,
+			Oid: user.Oid,
+		}
+		query = db.Where("id = ? AND oid = ?", team.Id, user.Oid).Find(teamUser)
+		if query.RowsAffected == 0 {
+			// db.Create(teamUser)
+			fmt.Println("create team user:", teamUser)
+		}
+	}
 
 	// return response
 	response := &LoginResponse{
