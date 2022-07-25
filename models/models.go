@@ -31,10 +31,12 @@ type UserLicense struct {
 }
 
 type TenantTeam struct {
-	Id          string `gorm:"primary_key" json:"id"`
-	Tid         string `json:"tid"`
-	DisplayName string `json:"displayName"`
-	Description string `json:"description"`
+	Id          string    `gorm:"primary_key" json:"id"`
+	Tid         string    `json:"tid"`
+	DisplayName string    `json:"displayName"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 type TeamUser struct {
@@ -50,6 +52,8 @@ type TeamRoom struct {
 	Capacity       int            `json:"capacity"`
 	DeploymentZone DeploymentZone `json:"deploymentZone"`
 	RoomType       RoomType       `json:"roomType"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
 }
 
 type RoomInfo struct {
