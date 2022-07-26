@@ -2,6 +2,7 @@ package queries
 
 import (
 	"errors"
+	"fmt"
 	"peachone/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -140,4 +141,19 @@ func SetUpNewTeamAndRooms(db *gorm.DB, team *models.TenantTeam) error {
 	}
 
 	return nil
+}
+
+func GetUsersForTeam(db *gorm.DB, teamId string) ([]models.TenantUser, error) {
+	sql_fmt := "SELECT tenant_users.* " +
+		"FROM tenant_users " +
+		"JOIN team_users ON tenant_users.oid = team_users.oid " +
+		"WHERE team_users.id = '%s' "
+	sql := fmt.Sprintf(sql_fmt, teamId)
+	users := []models.TenantUser{}
+	query := db.Raw(sql).Scan(&users)
+	if query.RowsAffected == 0 {
+		return nil, errors.New("could not find users for team")
+	}
+
+	return users, nil
 }

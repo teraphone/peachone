@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"peachone/database"
 	"peachone/models"
+	"peachone/queries"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -62,4 +63,110 @@ func UpdateLicense(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 
+}
+
+// --------------------------------------------------------------------------------
+// Get World request handler
+// --------------------------------------------------------------------------------
+type GetWorldResponse struct {
+	Teams   []models.TeamInfo  `json:"teams"`
+	User    models.TenantUser  `json:"user"`
+	License models.UserLicense `json:"license"`
+}
+
+func GetWorld(c *fiber.Ctx) error {
+	// extract claims from JWT
+	claims, err := getClaimsFromJWT(c)
+	if err != nil {
+		fmt.Println("error extracting claims from JWT:", err)
+		return fiber.NewError(fiber.StatusUnauthorized, "Expired JWT.")
+	}
+
+	// get database connection
+	db := database.DB.DB
+
+	// get user
+	user := &models.TenantUser{}
+	query := db.Where("oid = ?", claims.Oid).Find(user)
+	if query.RowsAffected == 0 {
+		fmt.Println("user not found for user:", claims.Oid)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	// get license
+	license := &models.UserLicense{}
+	query = db.Where("oid = ?", claims.Oid).Find(license)
+	if query.RowsAffected == 0 {
+		fmt.Println("license not found for user:", claims.Oid)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	teamInfos := []models.TeamInfo{}
+
+	// get the user's teams
+	usersTeams := []models.TeamUser{}
+	query = db.Where("oid = ?", user.Oid).Find(&usersTeams)
+	if query.RowsAffected == 0 {
+		fmt.Println("no teams found for user:", user.Oid)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	// get TeamInfo for each team
+	for _, userTeam := range usersTeams {
+		roomInfos := []models.RoomInfo{}
+
+		// get TenantTeam
+		team := &models.TenantTeam{}
+		query := db.Where("id = ?", userTeam.Id).Find(&team)
+		if query.RowsAffected == 0 {
+			fmt.Println("team not found:", userTeam.Id)
+			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+		}
+
+		// get TeamRooms for team
+		rooms := []models.TeamRoom{}
+		query = db.Where("team_id = ?", team.Id).Find(&rooms)
+		if query.RowsAffected == 0 {
+			fmt.Println("rooms not found for team:", team.Id)
+			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+		}
+
+		// for each room, get LivekitJoinToken
+		for _, room := range rooms {
+			token, err := createLiveKitJoinToken(room.TeamId, room.Id.String(), userTeam.Oid)
+			if err != nil {
+				fmt.Println("error creating LiveKitJoinToken:", err)
+				return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+			}
+			roomInfo := models.RoomInfo{
+				Room:      room,
+				RoomToken: token,
+			}
+			roomInfos = append(roomInfos, roomInfo)
+		}
+
+		// get users for team
+		users, err := queries.GetUsersForTeam(db, team.Id)
+		if err != nil {
+			fmt.Println("error getting users for team:", err)
+			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+		}
+
+		// create TeamInfo
+		teamInfo := &models.TeamInfo{
+			Team:  *team,
+			Rooms: roomInfos,
+			Users: users,
+		}
+
+		teamInfos = append(teamInfos, *teamInfo)
+	}
+
+	// return response
+	response := &GetWorldResponse{
+		Teams:   teamInfos,
+		User:    *user,
+		License: *license,
+	}
+	return c.JSON(response)
 }
