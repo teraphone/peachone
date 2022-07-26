@@ -68,7 +68,7 @@ func Login(c *fiber.Ctx) error {
 	for i, teamable := range teamables {
 		teams[i] = models.TenantTeam{
 			Id:          ReadString(teamable.GetId()),
-			Tid:         ReadString(teamable.GetTenantId()),
+			Tid:         ReadString(teamable.GetTenantId()), // <-- why is this empty?
 			DisplayName: ReadString(teamable.GetDisplayName()),
 			Description: ReadString(teamable.GetDescription()),
 		}
@@ -93,9 +93,12 @@ func Login(c *fiber.Ctx) error {
 	// check if user exists
 	query := db.Where("oid = ?", user.Oid).Find(user)
 	if query.RowsAffected == 0 {
-		queries.SetUpNewUserAndLicense(db, user, license)
-		fmt.Println("create user:", user)
-		fmt.Println("create user license:", license)
+		err := queries.SetUpNewUserAndLicense(db, user, license)
+		if err != nil {
+			fmt.Println("error setting up new user and license:", err)
+			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+		}
+
 	} else {
 		// get user license
 		query = db.Where("oid = ?", user.Oid).Find(license)
@@ -107,12 +110,17 @@ func Login(c *fiber.Ctx) error {
 
 	// for each team
 	for _, team := range teams {
+		// fix empty team.Tid
+		team.Tid = user.Tid
+
 		// check if team exists
-		query := db.Where("id = ?", team.Id).Find(team)
+		query := db.Where("id = ?", team.Id).Find(&team)
 		if query.RowsAffected == 0 {
-			queries.SetUpNewTeamAndRooms(db, &team)
-			fmt.Println("create team:", team)
-			fmt.Println("create team rooms")
+			err := queries.SetUpNewTeamAndRooms(db, &team)
+			if err != nil {
+				fmt.Println("error setting up new team and rooms:", err, team)
+				return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+			}
 		}
 
 		// check if user exists in team
