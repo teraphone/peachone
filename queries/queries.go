@@ -126,7 +126,7 @@ func SetUpNewTeamAndRooms(db *gorm.DB, team *models.TenantTeam) error {
 	for _, roomConfig := range DefaultRoomConfigs {
 		room := &models.TeamRoom{
 			Id:             uuid.Must(uuid.NewV4()),
-			TeamId:         team.Tid,
+			TeamId:         team.Id,
 			DisplayName:    roomConfig.DisplayName,
 			Description:    roomConfig.Description,
 			Capacity:       roomConfig.Capacity,
