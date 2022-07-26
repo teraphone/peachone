@@ -110,7 +110,7 @@ func Login(c *fiber.Ctx) error {
 		// check if team exists
 		query := db.Where("id = ?", team.Id).Find(team)
 		if query.RowsAffected == 0 {
-			// SetUpNewTeamAndRooms(db, team) todo: finish this
+			queries.SetUpNewTeamAndRooms(db, &team)
 			fmt.Println("create team:", team)
 			fmt.Println("create team rooms")
 		}
@@ -122,7 +122,7 @@ func Login(c *fiber.Ctx) error {
 		}
 		query = db.Where("id = ? AND oid = ?", team.Id, user.Oid).Find(teamUser)
 		if query.RowsAffected == 0 {
-			// db.Create(teamUser)
+			db.Create(teamUser)
 			fmt.Println("create team user:", teamUser)
 		}
 	}
