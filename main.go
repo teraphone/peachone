@@ -47,6 +47,7 @@ func setupPrivate(app *fiber.App) {
 	private.Get("/", routes.PrivateWelcome)
 	private.Patch("/license", routes.UpdateLicense)
 	private.Get("/world", routes.GetWorld)
+	private.Get("/auth", routes.GetRefreshedAccessToken)
 
 }
 

@@ -3,6 +3,7 @@ package routes
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -76,6 +77,34 @@ func createRefreshToken(user *models.TenantUser) (string, int64, error) {
 	}
 
 	return tokenString, expiration, nil
+}
+
+func validateToken(tokenString string) (*TokenClaims, error) {
+	getKey := func(_ *jwt.Token) (interface{}, error) {
+		SIGNING_KEY := os.Getenv("SIGNING_KEY")
+		return []byte(SIGNING_KEY), nil
+	}
+
+	token, err := jwt.Parse(tokenString, getKey)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	oid := claims["oid"].(string)
+	tid := claims["tid"].(string)
+	expiration := int64(claims["expiration"].(float64))
+	tokenClaims := &TokenClaims{
+		Oid:        oid,
+		Tid:        tid,
+		Expiration: expiration,
+	}
+
+	if time.Now().Unix() > expiration {
+		return nil, errors.New("token expired")
+	}
+
+	return tokenClaims, nil
 }
 
 func createFirebaseAuthToken(ctx context.Context, userId string) (string, error) {

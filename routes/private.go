@@ -170,3 +170,57 @@ func GetWorld(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// --------------------------------------------------------------------------------
+// Get Refreshed Access Token request handler
+// --------------------------------------------------------------------------------
+type GetRefreshedAccessTokenRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+type GetRefreshedAccessTokenResponse struct {
+	Success                bool   `json:"success"`
+	AccessToken            string `json:"accessToken"`
+	AccessTokenExpiration  int64  `json:"accessTokenExpiration"`
+	RefreshToken           string `json:"refreshToken"`
+	RefreshTokenExpiration int64  `json:"refreshTokenExpiration"`
+}
+
+func GetRefreshedAccessToken(c *fiber.Ctx) error {
+	// get request body
+	req := &GetRefreshedAccessTokenRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate refresh token
+	claims, err := validateToken(req.RefreshToken)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "Invalid refresh token.")
+	}
+
+	// create new access and refresh tokens
+	user := &models.TenantUser{
+		Oid: claims.Oid,
+		Tid: claims.Tid,
+	}
+	accessToken, accessTokenExpiration, err := createAccessToken(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	refreshToken, refreshTokenExpiration, err := createRefreshToken(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	// return response
+	response := &GetRefreshedAccessTokenResponse{
+		Success:                true,
+		AccessToken:            accessToken,
+		AccessTokenExpiration:  accessTokenExpiration,
+		RefreshToken:           refreshToken,
+		RefreshTokenExpiration: refreshTokenExpiration,
+	}
+	return c.JSON(response)
+}
