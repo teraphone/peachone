@@ -131,6 +131,11 @@ func GetWorld(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 		}
 
+		// check if license if active or trial is active
+		licenseActive := license.LicenseStatus == models.Active
+		trialActive := license.TrialActivated && (time.Now().Unix() < license.TrialExpiresAt.Unix())
+		canJoin := licenseActive || trialActive
+
 		// for each room, get LivekitJoinToken
 		for _, room := range rooms {
 			token, err := createLiveKitJoinToken(room.TeamId, room.Id.String(), userTeam.Oid)
@@ -139,8 +144,10 @@ func GetWorld(c *fiber.Ctx) error {
 				return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 			}
 			roomInfo := models.RoomInfo{
-				Room:      room,
-				RoomToken: token,
+				Room: room,
+			}
+			if canJoin {
+				roomInfo.RoomToken = token
 			}
 			roomInfos = append(roomInfos, roomInfo)
 		}
