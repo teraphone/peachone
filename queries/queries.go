@@ -73,39 +73,41 @@ type DefaultRoomConfig struct {
 	RoomType       models.RoomType       `json:"roomType"`
 }
 
+const DefaultRoomCapacity = 16
+
 var DefaultRoomConfigs = []DefaultRoomConfig{
 	{
 		DisplayName:    "Hangout",
 		Description:    "Just chatting",
-		Capacity:       16,
+		Capacity:       DefaultRoomCapacity,
 		DeploymentZone: models.USWest1B,
 		RoomType:       models.Public,
 	},
 	{
 		DisplayName:    "Co-Work",
 		Description:    "Working together",
-		Capacity:       16,
+		Capacity:       DefaultRoomCapacity,
 		DeploymentZone: models.USWest1B,
 		RoomType:       models.Public,
 	},
 	{
 		DisplayName:    "Meeting Room Apple",
 		Description:    "Inventing the future",
-		Capacity:       16,
+		Capacity:       DefaultRoomCapacity,
 		DeploymentZone: models.USWest1B,
 		RoomType:       models.Public,
 	},
 	{
 		DisplayName:    "Meeting Room Banana",
 		Description:    "Solving hard problems",
-		Capacity:       16,
+		Capacity:       DefaultRoomCapacity,
 		DeploymentZone: models.USWest1B,
 		RoomType:       models.Public,
 	},
 	{
 		DisplayName:    "Office Hours",
 		Description:    "Helping each other",
-		Capacity:       16,
+		Capacity:       DefaultRoomCapacity,
 		DeploymentZone: models.USWest1B,
 		RoomType:       models.Public,
 	},
