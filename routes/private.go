@@ -48,7 +48,7 @@ func UpdateLicense(c *fiber.Ctx) error {
 	if !license.TrialActivated {
 		tx := db.Model(license).Updates(models.UserLicense{
 			TrialActivated: true,
-			TrialExpiresAt: time.Now().Add(time.Hour * 24 & 30),
+			TrialExpiresAt: time.Now().Add(time.Hour * 24 * 30),
 		})
 		if tx.Error != nil {
 			fmt.Println("error updating license:", tx.Error)
