@@ -117,7 +117,7 @@ func GetWorld(c *fiber.Ctx) error {
 
 		// get TenantTeam
 		team := &models.TenantTeam{}
-		query := db.Where("id = ?", userTeam.Id).Find(&team)
+		query := db.Where("id = ?", userTeam.Id).Find(team)
 		if query.RowsAffected == 0 {
 			fmt.Println("team not found:", userTeam.Id)
 			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
