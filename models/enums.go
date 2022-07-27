@@ -27,7 +27,8 @@ func (s LicenseStatus) String() string {
 type LicensePlan int
 
 const (
-	Standard LicensePlan = iota
+	None LicensePlan = iota
+	Standard
 	Professional
 )
 

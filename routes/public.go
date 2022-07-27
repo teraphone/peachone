@@ -6,6 +6,7 @@ import (
 	"peachone/auth"
 	"peachone/database"
 	"peachone/models"
+	"peachone/queries"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -23,12 +24,14 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Success           bool              `json:"success"`
-	AccessToken       string            `json:"accessToken"`
-	Expiration        int64             `json:"expiration"`
-	RefreshToken      string            `json:"refreshToken"`
-	FirebaseAuthToken string            `json:"firebaseAuthToken"`
-	User              models.TenantUser `json:"user"`
+	Success                bool               `json:"success"`
+	AccessToken            string             `json:"accessToken"`
+	AccessTokenExpiration  int64              `json:"accessTokenExpiration"`
+	RefreshToken           string             `json:"refreshToken"`
+	RefreshTokenExpiration int64              `json:"refreshTokenExpiration"`
+	FirebaseAuthToken      string             `json:"firebaseAuthToken"`
+	User                   models.TenantUser  `json:"user"`
+	License                models.UserLicense `json:"license"`
 }
 
 func Login(c *fiber.Ctx) error {
@@ -65,7 +68,7 @@ func Login(c *fiber.Ctx) error {
 	for i, teamable := range teamables {
 		teams[i] = models.TenantTeam{
 			Id:          ReadString(teamable.GetId()),
-			Tid:         ReadString(teamable.GetTenantId()),
+			Tid:         ReadString(teamable.GetTenantId()), // <-- why is this empty?
 			DisplayName: ReadString(teamable.GetDisplayName()),
 			Description: ReadString(teamable.GetDescription()),
 		}
@@ -81,24 +84,43 @@ func Login(c *fiber.Ctx) error {
 	}
 	fmt.Println("user from cred.UserAuth:", user)
 
+	// user license
+	license := &models.UserLicense{}
+
 	// get database connection
 	db := database.DB.DB
 
 	// check if user exists
 	query := db.Where("oid = ?", user.Oid).Find(user)
 	if query.RowsAffected == 0 {
-		// db.Create(user)
-		fmt.Println("create user:", user)
+		err := queries.SetUpNewUserAndLicense(db, user, license)
+		if err != nil {
+			fmt.Println("error setting up new user and license:", err)
+			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+		}
+
+	} else {
+		// get user license
+		query = db.Where("oid = ?", user.Oid).Find(license)
+		if query.RowsAffected == 0 {
+			fmt.Println("license not found for user:", user)
+			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+		}
 	}
 
-	// for each team (todo: finish this)
+	// for each team
 	for _, team := range teams {
+		// fix empty team.Tid
+		team.Tid = user.Tid
+
 		// check if team exists
-		query := db.Where("id = ?", team.Id).Find(team)
+		query := db.Where("id = ?", team.Id).Find(&team)
 		if query.RowsAffected == 0 {
-			// SetUpNewTeamAndRooms(db, team)
-			fmt.Println("create team:", team)
-			fmt.Println("create team rooms")
+			err := queries.SetUpNewTeamAndRooms(db, &team)
+			if err != nil {
+				fmt.Println("error setting up new team and rooms:", err, team)
+				return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+			}
 		}
 
 		// check if user exists in team
@@ -108,14 +130,42 @@ func Login(c *fiber.Ctx) error {
 		}
 		query = db.Where("id = ? AND oid = ?", team.Id, user.Oid).Find(teamUser)
 		if query.RowsAffected == 0 {
-			// db.Create(teamUser)
+			db.Create(teamUser)
 			fmt.Println("create team user:", teamUser)
 		}
 	}
 
+	// create access token
+	accessToken, accessTokenExp, err := createAccessToken(user)
+	if err != nil {
+		fmt.Println("error creating access token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	// create refresh token
+	refreshToken, refreshTokenExpiration, err := createRefreshToken(user)
+	if err != nil {
+		fmt.Println("error creating refresh token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
+	// create firebase auth token
+	firebaseAuthToken, err := createFirebaseAuthToken(c.Context(), user.Oid)
+	if err != nil {
+		fmt.Println("error creating firebase auth token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+
 	// return response
 	response := &LoginResponse{
-		Success: true,
+		Success:                true,
+		AccessToken:            accessToken,
+		AccessTokenExpiration:  accessTokenExp,
+		RefreshToken:           refreshToken,
+		RefreshTokenExpiration: refreshTokenExpiration,
+		FirebaseAuthToken:      firebaseAuthToken,
+		User:                   *user,
+		License:                *license,
 	}
 	return c.JSON(response)
 
