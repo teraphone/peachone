@@ -20,7 +20,7 @@ var DBClient *db.Client
 
 func InitFirebaseApp(ctx context.Context) {
 	conf := &firebase.Config{
-		DatabaseURL: "https://dally-arty.firebaseio.com",
+		DatabaseURL: "https://arty-dev.firebaseio.com/",
 	}
 
 	SERVICE_ACCOUNT_JSON := os.Getenv("SERVICE_ACCOUNT_JSON")
@@ -33,7 +33,7 @@ func InitFirebaseApp(ctx context.Context) {
 		App = app
 	} else {
 		opt := option.WithCredentialsFile(SERVICE_ACCOUNT_JSON)
-		app, err := firebase.NewApp(ctx, nil, opt)
+		app, err := firebase.NewApp(ctx, conf, opt)
 		if err != nil {
 			log.Fatalf("error initializing app: %v\n", err)
 		}

@@ -6,3 +6,5 @@ database/queries.sql
 server-ca.pem
 client-key.pem
 client-cert.pem
+.env
+commands-with-secrets.md
