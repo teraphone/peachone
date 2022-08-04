@@ -208,7 +208,7 @@ func EmailSignup(c *fiber.Ctx) error {
 		fmt.Println("error sending email signup alert:", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 	}
-	fmt.Println("send email signup alert for ", req.Email)
+	fmt.Println("send email signup alert for:", req.Email)
 	fmt.Println("message:", message)
 	fmt.Println("id:", id)
 
