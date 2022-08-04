@@ -170,3 +170,25 @@ func Login(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
+
+// --------------------------------------------------------------------------------
+// EmailSignup
+// --------------------------------------------------------------------------------
+type EmailSignupRequest struct {
+	Email string `json:"email"`
+}
+
+type EmailSignupResponse struct {
+	Success bool `json:"success"`
+}
+
+func EmailSignup(c *fiber.Ctx) error {
+	// get request body
+	req := &EmailSignupRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// todo: finish this
+
+}
