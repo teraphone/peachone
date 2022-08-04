@@ -189,6 +189,33 @@ func EmailSignup(c *fiber.Ctx) error {
 		return err
 	}
 
-	// todo: finish this
+	// validate request body
+	if req.Email == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid email.")
+	}
+
+	// send alert email
+	alertVars := &EmailSignupAlertVars{
+		SenderEmail:     "alerts@teraphone.app",
+		Subject:         "[email-signup] New Email Signup",
+		RecipientEmails: []string{"david@teraphone.app", "nathan@teraphone.app"},
+		TemplateVars: &EmailSignupAlertTemplateVars{
+			Email: req.Email,
+		},
+	}
+	message, id, err := SendEmailSignupAlert(c.Context(), alertVars)
+	if err != nil {
+		fmt.Println("error sending email signup alert:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+	fmt.Println("send email signup alert for ", req.Email)
+	fmt.Println("message:", message)
+	fmt.Println("id:", id)
+
+	// return response
+	response := &EmailSignupResponse{
+		Success: true,
+	}
+	return c.JSON(response)
 
 }
