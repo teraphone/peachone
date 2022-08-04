@@ -34,6 +34,8 @@ func setupPublic(app *fiber.App) {
 
 	// Public endpoints
 	public.Post("/login", routes.Login)
+	public.Post("/email-signup", routes.EmailSignup)
+
 }
 
 func setupPrivate(app *fiber.App) {

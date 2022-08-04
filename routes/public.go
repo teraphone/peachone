@@ -170,3 +170,52 @@ func Login(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
+
+// --------------------------------------------------------------------------------
+// EmailSignup
+// --------------------------------------------------------------------------------
+type EmailSignupRequest struct {
+	Email string `json:"email"`
+}
+
+type EmailSignupResponse struct {
+	Success bool `json:"success"`
+}
+
+func EmailSignup(c *fiber.Ctx) error {
+	// get request body
+	req := &EmailSignupRequest{}
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.Email == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid email.")
+	}
+
+	// send alert email
+	alertVars := &EmailSignupAlertVars{
+		SenderEmail:     "alerts@teraphone.app",
+		Subject:         "[email-signup] New Email Signup",
+		RecipientEmails: []string{"david@teraphone.app", "nathan@teraphone.app"},
+		TemplateVars: &EmailSignupAlertTemplateVars{
+			Email: req.Email,
+		},
+	}
+	message, id, err := SendEmailSignupAlert(c.Context(), alertVars)
+	if err != nil {
+		fmt.Println("error sending email signup alert:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	}
+	fmt.Println("send email signup alert for:", req.Email)
+	fmt.Println("message:", message)
+	fmt.Println("id:", id)
+
+	// return response
+	response := &EmailSignupResponse{
+		Success: true,
+	}
+	return c.JSON(response)
+
+}

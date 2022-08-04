@@ -234,6 +234,55 @@ func SendAccountVerificationEmail(ctx context.Context, vars *AccountVerification
 	return resp, id, nil
 }
 
+type EmailSignupAlertVars struct {
+	SenderEmail     string
+	Subject         string
+	RecipientEmails []string
+	TemplateVars    *EmailSignupAlertTemplateVars
+}
+
+type EmailSignupAlertTemplateVars struct {
+	Email string
+}
+
+func SendEmailSignupAlert(ctx context.Context, vars *EmailSignupAlertVars) (mes string, id string, err error) {
+	// email template
+	htmlEmailSignupAlertTemplate := `
+<html>
+	<body>
+		<p>{{.Email}}</p>
+	</body>
+</html>
+`
+	// create email message
+	mg := CreateMailgunClient()
+	message := mg.NewMessage(vars.SenderEmail, vars.Subject, "", vars.RecipientEmails...)
+	parsedHtmlTemplate, err := template.New("body").Parse(htmlEmailSignupAlertTemplate)
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	var htmlBuffer bytes.Buffer
+	if err := parsedHtmlTemplate.Execute(&htmlBuffer, vars.TemplateVars); err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	message.SetHtml(htmlBuffer.String())
+
+	// send message with 10 second timeout
+	log.Printf("Sending password reset email to %v", vars.RecipientEmails)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	resp, id, err := mg.Send(ctxWithTimeout, message)
+	if err != nil {
+		fmt.Println(err.Error())
+		return resp, id, err
+	}
+	log.Printf("ID: %s Resp: %s", id, resp)
+
+	return resp, id, nil
+}
+
 func ReadString(s *string) string {
 	if s == nil {
 		return ""
