@@ -250,7 +250,7 @@ func SendEmailSignupAlert(ctx context.Context, vars *EmailSignupAlertVars) (mes 
 	htmlEmailSignupAlertTemplate := `
 <html>
 	<body>
-		<p>{{.Email}},</p>
+		<p>{{.Email}}</p>
 	</body>
 </html>
 `
