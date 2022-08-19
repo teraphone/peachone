@@ -31,11 +31,14 @@ func Resolve(c *fiber.Ctx) error {
 	}
 
 	// create fulfillment api client
-	client := saasapi.NewDefaultFulfillmentOperationsClient()
+	client, err := saasapi.NewDefaultFulfillmentOperationsClient()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "could not create fulfillment api client")
+	}
 
 	resp, err := client.Resolve(c.Context(), req.Token, nil)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Could not resolve token.")
+		return fiber.NewError(fiber.StatusInternalServerError, "could not resolve token")
 	}
 
 	// return response
