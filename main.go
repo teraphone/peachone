@@ -23,6 +23,7 @@ func setupRoutes(app *fiber.App) {
 	setupPrivate(app)
 	setupRoomService(app)
 	setupWebhooks(app)
+	setupSubscriptions(app)
 
 }
 
@@ -71,6 +72,13 @@ func setupWebhooks(app *fiber.App) {
 
 	// Livekit webhook handler
 	webhooks.Post("/livekit", routes.LivekitHandler)
+}
+
+func setupSubscriptions(app *fiber.App) {
+	subscriptions := app.Group("/v1/subscriptions")
+
+	// Resolve purchase token
+	subscriptions.Post("/resolve", routes.Resolve)
 }
 
 func main() {
