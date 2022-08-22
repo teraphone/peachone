@@ -7,15 +7,18 @@ import (
 )
 
 type TenantUser struct {
-	Oid       string    `gorm:"primary_key" json:"oid"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Tid       string    `json:"tid"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Oid            string    `gorm:"primary_key" json:"oid"`
+	Name           string    `json:"name"`
+	Email          string    `json:"email"`
+	Tid            string    `json:"tid"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+	SubscriptionId string    `json:"subscriptionId"` // fk: Subscription.Id
+	TrialActivated bool      `json:"trialActivated"`
+	TrialExpiresAt time.Time `json:"trialExpiresAt"`
 }
 
-type UserLicense struct {
+type UserLicense struct { // todo: Delete this table
 	Oid                string        `gorm:"primary_key" json:"oid"` // fk: TenantUser.Oid
 	Tid                string        `json:"tid"`
 	LicenseExpiresAt   time.Time     `json:"licenseExpiresAt"`
