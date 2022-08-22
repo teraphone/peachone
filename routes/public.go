@@ -24,14 +24,14 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Success                bool               `json:"success"`
-	AccessToken            string             `json:"accessToken"`
-	AccessTokenExpiration  int64              `json:"accessTokenExpiration"`
-	RefreshToken           string             `json:"refreshToken"`
-	RefreshTokenExpiration int64              `json:"refreshTokenExpiration"`
-	FirebaseAuthToken      string             `json:"firebaseAuthToken"`
-	User                   models.TenantUser  `json:"user"`
-	License                models.UserLicense `json:"license"`
+	Success                bool                `json:"success"`
+	AccessToken            string              `json:"accessToken"`
+	AccessTokenExpiration  int64               `json:"accessTokenExpiration"`
+	RefreshToken           string              `json:"refreshToken"`
+	RefreshTokenExpiration int64               `json:"refreshTokenExpiration"`
+	FirebaseAuthToken      string              `json:"firebaseAuthToken"`
+	User                   models.TenantUser   `json:"user"`
+	Subscription           models.Subscription `json:"subscription"`
 }
 
 func Login(c *fiber.Ctx) error {
@@ -84,26 +84,27 @@ func Login(c *fiber.Ctx) error {
 	}
 	fmt.Println("user from cred.UserAuth:", user)
 
-	// user license
-	license := &models.UserLicense{}
-
 	// get database connection
 	db := database.DB.DB
 
 	// check if user exists
 	query := db.Where("oid = ?", user.Oid).Find(user)
 	if query.RowsAffected == 0 {
-		err := queries.SetUpNewUserAndLicense(db, user, license)
+		err := queries.SetUpNewUser(db, user)
 		if err != nil {
-			fmt.Println("error setting up new user and license:", err)
+			fmt.Println("error setting up new user:", err)
 			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 		}
 
-	} else {
-		// get user license
-		query = db.Where("oid = ?", user.Oid).Find(license)
+	}
+	fmt.Println("found user:", user)
+
+	// get subscription
+	subscription := &models.Subscription{}
+	if user.SubscriptionId != "" {
+		query = db.Where("id = ?", user.SubscriptionId).Find(subscription)
 		if query.RowsAffected == 0 {
-			fmt.Println("license not found for user:", user)
+			fmt.Println("subscription not found for id:", user.SubscriptionId)
 			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 		}
 	}
@@ -165,7 +166,7 @@ func Login(c *fiber.Ctx) error {
 		RefreshTokenExpiration: refreshTokenExpiration,
 		FirebaseAuthToken:      firebaseAuthToken,
 		User:                   *user,
-		License:                *license,
+		Subscription:           *subscription,
 	}
 	return c.JSON(response)
 

@@ -37,7 +37,7 @@ func AddUserToTeam(db *gorm.DB, userId string, teamId string) error {
 	return nil
 }
 
-func SetUpNewUserAndLicense(db *gorm.DB, user *models.TenantUser, license *models.UserLicense) error {
+func SetUpNewUser(db *gorm.DB, user *models.TenantUser) error {
 	// make sure user isn't empty
 	if user.Oid == "" || user.Tid == "" {
 		return errors.New("missing fields in user")
@@ -45,19 +45,6 @@ func SetUpNewUserAndLicense(db *gorm.DB, user *models.TenantUser, license *model
 
 	// create user
 	tx := db.Create(user)
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	// create license
-	license.Oid = user.Oid
-	license.Tid = user.Tid
-	license.LicenseStatus = models.Inactive
-	license.LicensePlan = models.None
-	license.LicenseAutoRenew = false
-	license.LicenseRequested = false
-	license.TrialActivated = false
-	tx = db.Create(license)
 	if tx.Error != nil {
 		return tx.Error
 	}
