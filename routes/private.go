@@ -16,14 +16,14 @@ func PrivateWelcome(c *fiber.Ctx) error {
 }
 
 // --------------------------------------------------------------------------------
-// Update License request handler
+// Update Trial request handler
 // --------------------------------------------------------------------------------
-type UpdateLicenseResponse struct {
-	Success bool               `json:"success"`
-	License models.UserLicense `json:"license"`
+type UpdateTrialResponse struct {
+	Success bool              `json:"success"`
+	User    models.TenantUser `json:"user"`
 }
 
-func UpdateLicense(c *fiber.Ctx) error {
+func UpdateTrial(c *fiber.Ctx) error {
 	// extract claims from JWT
 	claims, err := getClaimsFromJWT(c)
 	if err != nil {
@@ -34,32 +34,31 @@ func UpdateLicense(c *fiber.Ctx) error {
 	// get database connection
 	db := database.DB.DB
 
-	// get license
-	license := &models.UserLicense{
-		Oid: claims.Oid,
-	}
-	query := db.Where("oid = ?", license.Oid).Find(license)
+	// get user
+	user := &models.TenantUser{}
+	query := db.Where("oid = ?", claims.Oid).Find(user)
 	if query.RowsAffected == 0 {
-		fmt.Println("license not found for user:", license.Oid)
+		fmt.Println("user not found:", claims.Oid)
 		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 	}
+	fmt.Println("found user:", user)
 
-	// update license
-	if !license.TrialActivated {
-		tx := db.Model(license).Updates(models.UserLicense{
+	// update trial
+	if !user.TrialActivated {
+		tx := db.Model(user).Updates(models.TenantUser{
 			TrialActivated: true,
 			TrialExpiresAt: time.Now().Add(time.Hour * 24 * 30),
 		})
 		if tx.Error != nil {
-			fmt.Println("error updating license:", tx.Error)
+			fmt.Println("error updating trial:", tx.Error)
 			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 		}
 	}
 
 	// return response
-	response := &UpdateLicenseResponse{
+	response := &UpdateTrialResponse{
 		Success: true,
-		License: *license,
+		User:    *user,
 	}
 	return c.JSON(response)
 
