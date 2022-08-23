@@ -9,6 +9,7 @@ import (
 	"peachone/queries"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/microsoftgraph/msgraph-sdk-go/me"
 )
 
 // Public Welcome handler
@@ -264,8 +265,14 @@ func Auth(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "could not authenticate")
 	}
 
-	me := client.Me()
-	userable, err := me.Get()
+	// get user info
+	userable, err := client.Me().GetWithRequestConfigurationAndResponseHandler(
+		&me.MeRequestBuilderGetRequestConfiguration{
+			QueryParameters: &me.MeRequestBuilderGetQueryParameters{
+				Select: []string{"companyName"},
+			},
+		}, nil,
+	)
 	if err != nil {
 		fmt.Println("error getting user:", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "error fetching user info")
