@@ -36,6 +36,7 @@ func setupPublic(app *fiber.App) {
 	// Public endpoints
 	public.Post("/login", routes.Login)
 	public.Post("/email-signup", routes.EmailSignup)
+	public.Post("auth", routes.Auth)
 
 }
 

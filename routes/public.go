@@ -220,3 +220,95 @@ func EmailSignup(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
+
+// --------------------------------------------------------------------------------
+// Auth
+// --------------------------------------------------------------------------------
+type AuthRequest struct {
+	MSAccessToken string `json:"msAccessToken"`
+}
+
+type AuthUserInfo struct {
+	Oid         string `json:"oid"`
+	Tid         string `json:"tid"`
+	Email       string `json:"email"`
+	Name        string `json:"name"`
+	CompanyName string `json:"companyName"`
+}
+
+type AuthResponse struct {
+	Success                bool         `json:"success"`
+	AccessToken            string       `json:"accessToken"`
+	AccessTokenExpiration  int64        `json:"accessTokenExpiration"`
+	RefreshToken           string       `json:"refreshToken"`
+	RefreshTokenExpiration int64        `json:"refreshTokenExpiration"`
+	UserInfo               AuthUserInfo `json:"userInfo"`
+}
+
+func Auth(c *fiber.Ctx) error {
+	// get request body
+	req := new(AuthRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.MSAccessToken == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid access token")
+	}
+
+	// authenticate with on-behalf-of flow
+	cred, client, err := auth.NewMSGraphClientWithScopes(req.MSAccessToken, []string{"User.Read"})
+	if err != nil {
+		fmt.Println("error authenticating with on-behalf-of flow:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "could not authenticate")
+	}
+
+	me := client.Me()
+	userable, err := me.Get()
+	if err != nil {
+		fmt.Println("error getting user:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "error fetching user info")
+	}
+
+	// populate auth user info
+	userInfo := &AuthUserInfo{
+		Oid:         cred.UserAuth.IDToken.Oid,
+		Tid:         cred.UserAuth.IDToken.TenantID,
+		Email:       cred.UserAuth.IDToken.Email,
+		Name:        cred.UserAuth.IDToken.Name,
+		CompanyName: ReadString(userable.GetCompanyName()), // <-- why is this empty?
+	}
+
+	// create access token
+	accessToken, accessTokenExp, err := createAccessToken(&models.TenantUser{
+		Oid: userInfo.Oid,
+		Tid: userInfo.Tid,
+	})
+	if err != nil {
+		fmt.Println("error creating access token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "error creating access token")
+	}
+
+	// create refresh token
+	refreshToken, refreshTokenExpiration, err := createRefreshToken(&models.TenantUser{
+		Oid: userInfo.Oid,
+		Tid: userInfo.Tid,
+	})
+	if err != nil {
+		fmt.Println("error creating firebase auth token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "error creating access token")
+	}
+
+	// return response
+	response := &AuthResponse{
+		Success:                true,
+		AccessToken:            accessToken,
+		AccessTokenExpiration:  accessTokenExp,
+		RefreshToken:           refreshToken,
+		RefreshTokenExpiration: refreshTokenExpiration,
+		UserInfo:               *userInfo,
+	}
+	return c.JSON(response)
+
+}
