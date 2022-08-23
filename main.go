@@ -77,6 +77,10 @@ func setupWebhooks(app *fiber.App) {
 
 func setupSubscriptions(app *fiber.App) {
 	subscriptions := app.Group("/v1/subscriptions")
+	SIGNING_KEY := os.Getenv("SIGNING_KEY")
+	subscriptions.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte(SIGNING_KEY),
+	}))
 
 	// Resolve purchase token
 	subscriptions.Post("/resolve", routes.Resolve)
