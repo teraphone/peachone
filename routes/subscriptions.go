@@ -19,6 +19,12 @@ type ResolveResponse struct {
 }
 
 func Resolve(c *fiber.Ctx) error {
+	// check JWT
+	_, err := getClaimsFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "expired jwt")
+	}
+
 	// get request body
 	req := new(ResolveRequest)
 	if err := c.BodyParser(req); err != nil {
