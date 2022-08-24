@@ -106,7 +106,7 @@ func Activate(c *fiber.Ctx) error {
 	_, err = client.ActivateSubscription(c.Context(), req.SubscriptionId, saasapi.SubscriberPlan{
 		PlanID:   subscriptionResponse.Subscription.PlanID,
 		Quantity: &quantity,
-	}, nil)
+	}, &saasapi.FulfillmentOperationsClientActivateSubscriptionOptions{})
 	if err != nil {
 		fmt.Println("error activating subscription:", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "could not activate subscription")
@@ -143,9 +143,9 @@ func Activate(c *fiber.Ctx) error {
 		Quantity:                  int(*activatedSubscriptionResponse.Quantity),
 		SaaSSubscriptionStatus:    models.SubscriptionStatusEnum(*activatedSubscriptionResponse.SaasSubscriptionStatus),
 		SandboxType:               models.SandboxTypeEnum(*activatedSubscriptionResponse.Subscription.SandboxType),
-		SessionId:                 *activatedSubscriptionResponse.Subscription.SessionID,
+		SessionId:                 ReadString(activatedSubscriptionResponse.Subscription.SessionID),
 		SessionMode:               models.SessionModeEnum(*activatedSubscriptionResponse.Subscription.SessionMode),
-		StoreFront:                *activatedSubscriptionResponse.Subscription.StoreFront,
+		StoreFront:                ReadString(activatedSubscriptionResponse.Subscription.StoreFront),
 		SubscriptionTermStartDate: *activatedSubscriptionResponse.Subscription.Term.StartDate,
 		SubscriptionTermEndDate:   *activatedSubscriptionResponse.Subscription.Term.EndDate,
 	}
@@ -159,7 +159,7 @@ func Activate(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not create subscription")
 		}
 	} else {
-		tx := db.Model(&models.Subscription{}).Updates(*newSubscription)
+		tx := db.Model(&models.Subscription{}).Where("id = ?", req.SubscriptionId).Updates(*newSubscription)
 		if tx.Error != nil {
 			fmt.Println("db error updating subscription:", tx.Error)
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not update subscription")
