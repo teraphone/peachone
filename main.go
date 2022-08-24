@@ -84,6 +84,9 @@ func setupSubscriptions(app *fiber.App) {
 
 	// Resolve purchase token
 	subscriptions.Post("/resolve", routes.Resolve)
+
+	// Activate subscription
+	subscriptions.Post("/activate", routes.Activate)
 }
 
 func main() {
