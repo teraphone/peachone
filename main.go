@@ -73,6 +73,9 @@ func setupWebhooks(app *fiber.App) {
 
 	// Livekit webhook handler
 	webhooks.Post("/livekit", routes.LivekitHandler)
+
+	// Subscriptions webhook handler
+	webhooks.Post("/subscriptions", routes.SubscriptionsWebhook)
 }
 
 func setupSubscriptions(app *fiber.App) {

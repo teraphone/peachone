@@ -188,6 +188,35 @@ func Activate(c *fiber.Ctx) error {
 }
 
 // --------------------------------------------------------------------------------
+// Subscriptions Webhook Dispatch
+// --------------------------------------------------------------------------------
+type SubscriptionsWebhookRequest struct {
+	Action saasapi.OperationActionEnum `json:"action"`
+}
+
+func SubscriptionsWebhook(c *fiber.Ctx) error {
+	// get request body
+	req := new(SubscriptionsWebhookRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.Action == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	// dispatch handler
+	switch req.Action {
+	case saasapi.OperationActionEnumChangePlan:
+		return ChangePlan(c)
+	default:
+		return fiber.NewError(fiber.StatusBadRequest, "invalid action")
+	}
+
+}
+
+// --------------------------------------------------------------------------------
 // Webhook ChangePlan handler
 // --------------------------------------------------------------------------------
 type ChangePlanRequest struct {
