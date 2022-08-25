@@ -48,3 +48,11 @@ func NewDefaultFulfillmentOperationsClient() (*FulfillmentOperationsClient, erro
 	}
 	return NewFulfillmentOperationsClient(*pl), nil
 }
+
+func NewDefaultSubscriptionOperationsClient() (*SubscriptionOperationsClient, error) {
+	pl, err := NewDefaultPipeline()
+	if err != nil {
+		return nil, err
+	}
+	return NewSubscriptionOperationsClient(*pl), nil
+}
