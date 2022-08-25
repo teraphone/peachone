@@ -205,32 +205,26 @@ func SubscriptionsWebhook(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
-	// dispatch handler
-	switch req.Action {
-	case saasapi.OperationActionEnumChangePlan:
-		return ChangePlan(c)
-	default:
-		return fiber.NewError(fiber.StatusBadRequest, "invalid action")
-	}
+	return GenericAction(c)
 
 }
 
 // --------------------------------------------------------------------------------
-// Webhook ChangePlan handler
+// Webhook Generic Action handler
 // --------------------------------------------------------------------------------
-type ChangePlanRequest struct {
+type GenericActionRequest struct {
 	Id             string                      `json:"id"`
 	SubscriptionId string                      `json:"subscriptionId"`
 	Action         saasapi.OperationActionEnum `json:"action"`
 }
 
-type ChangePlanResponse struct {
+type GenericActionResponse struct {
 	Success bool `json:"success"`
 }
 
-func ChangePlan(c *fiber.Ctx) error {
+func GenericAction(c *fiber.Ctx) error {
 	// get request body
-	req := new(ChangePlanRequest)
+	req := new(GenericActionRequest)
 	if err := c.BodyParser(req); err != nil {
 		return err
 	}
@@ -324,22 +318,8 @@ func ChangePlan(c *fiber.Ctx) error {
 	}
 
 	// return response
-	response := &ChangePlanResponse{
+	response := &GenericActionResponse{
 		Success: true,
 	}
 	return c.JSON(response)
 }
-
-// todo:
-// - webhook handlers
-// - when the subscription status is Subscribed:
-// -- ChangePlan handler (done)
-// -- ChangeQuantity handler
-// -- Renew handler
-// -- Suspend handler
-// -- Unsubscribe handler
-// - when the subscription status is Suspended:
-// -- Reinstate handler
-// -- Unsubscribe handler
-
-// note: webhook route needs to dispatch to the appropriate handler based on the action
