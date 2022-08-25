@@ -96,11 +96,14 @@ Note: the SERVICE_ACCOUNT_JSON environment variable is necessary for local devel
 /login
 - POST: login with a microsoft access token
 
+/auth
+- POST: authenticate with a microsoft access token (doens't create a new user)
+
 ## /v1/private (requires auth token)
 /
 - GET: displays a private welcome message
 
-/license
+/trial
 - PATCH: active the user's free trial
 
 /world
@@ -123,6 +126,17 @@ Note: the SERVICE_ACCOUNT_JSON environment variable is necessary for local devel
 ## /v1/webhooks
 /livekit
 - POST: receive a webhook from the livekit server
+
+## /v1/subscritpions
+/resolve
+- POST: exchange purchase token for subscription information
+
+/activate
+- POST: send a subscriptionId to activate
+
+/users
+- GET: returns a list of TenantUsers and their subscriptions
+
 
 # Docker Image
 ## Build & Push Docker Image

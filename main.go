@@ -23,6 +23,7 @@ func setupRoutes(app *fiber.App) {
 	setupPrivate(app)
 	setupRoomService(app)
 	setupWebhooks(app)
+	setupSubscriptions(app)
 
 }
 
@@ -35,6 +36,7 @@ func setupPublic(app *fiber.App) {
 	// Public endpoints
 	public.Post("/login", routes.Login)
 	public.Post("/email-signup", routes.EmailSignup)
+	public.Post("auth", routes.Auth)
 
 }
 
@@ -47,7 +49,7 @@ func setupPrivate(app *fiber.App) {
 
 	// Private endpoints
 	private.Get("/", routes.PrivateWelcome)
-	private.Patch("/license", routes.UpdateLicense)
+	private.Patch("/trial", routes.UpdateTrial)
 	private.Get("/world", routes.GetWorld)
 	private.Post("/auth", routes.GetRefreshedAccessToken)
 
@@ -71,6 +73,20 @@ func setupWebhooks(app *fiber.App) {
 
 	// Livekit webhook handler
 	webhooks.Post("/livekit", routes.LivekitHandler)
+}
+
+func setupSubscriptions(app *fiber.App) {
+	subscriptions := app.Group("/v1/subscriptions")
+	SIGNING_KEY := os.Getenv("SIGNING_KEY")
+	subscriptions.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte(SIGNING_KEY),
+	}))
+
+	// Resolve purchase token
+	subscriptions.Post("/resolve", routes.Resolve)
+
+	// Activate subscription
+	subscriptions.Post("/activate", routes.Activate)
 }
 
 func main() {
