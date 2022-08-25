@@ -50,6 +50,7 @@ const (
 	OperationActionEnumChangeQuantity OperationActionEnum = "ChangeQuantity"
 	OperationActionEnumSuspend OperationActionEnum = "Suspend"
 	OperationActionEnumReinstate OperationActionEnum = "Reinstate"
+	OperationActionEnumRenew OperationActionEnum = "Renew"
 )
 
 // PossibleOperationActionEnumValues returns the possible values for the OperationActionEnum const type.
@@ -60,6 +61,7 @@ func PossibleOperationActionEnumValues() []OperationActionEnum {
 		OperationActionEnumChangeQuantity,
 		OperationActionEnumSuspend,
 		OperationActionEnumReinstate,
+		OperationActionEnumRenew,
 	}
 }
 
