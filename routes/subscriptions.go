@@ -5,7 +5,6 @@ import (
 	"peachone/database"
 	"peachone/models"
 	"peachone/saasapi"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -220,12 +219,9 @@ func SubscriptionsWebhook(c *fiber.Ctx) error {
 // Webhook ChangePlan handler
 // --------------------------------------------------------------------------------
 type ChangePlanRequest struct {
-	Id                     string                      `json:"id"`
-	ActivityId             string                      `json:"activityId"`
-	OperationRequestSource string                      `json:"operationRequestSource"`
-	SubscriptionId         string                      `json:"subscriptionId"`
-	TimeStamp              time.Time                   `json:"timeStamp"`
-	Action                 saasapi.OperationActionEnum `json:"action"`
+	Id             string                      `json:"id"`
+	SubscriptionId string                      `json:"subscriptionId"`
+	Action         saasapi.OperationActionEnum `json:"action"`
 }
 
 type ChangePlanResponse struct {
