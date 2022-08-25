@@ -5,9 +5,39 @@ import (
 	"peachone/database"
 	"peachone/models"
 	"peachone/saasapi"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
+
+func makeSubscription(resp saasapi.FulfillmentOperationsClientGetSubscriptionResponse) *models.Subscription {
+	return &models.Subscription{
+		AutoRenew:                 *resp.Subscription.AutoRenew,
+		BeneficiaryEmail:          *resp.Subscription.Beneficiary.EmailID,
+		BeneficiaryOid:            *resp.Subscription.Beneficiary.ObjectID,
+		BeneficiaryTid:            *resp.Subscription.Beneficiary.TenantID,
+		BeneficiaryPuid:           *resp.Subscription.Beneficiary.Puid,
+		Created:                   *resp.Subscription.Created,
+		Id:                        *resp.Subscription.ID,
+		IsTest:                    *resp.Subscription.IsTest,
+		Name:                      *resp.Subscription.Name,
+		OfferId:                   *resp.Subscription.OfferID,
+		PlanId:                    *resp.Subscription.PlanID,
+		PublisherId:               *resp.Subscription.PublisherID,
+		PurchaserEmail:            *resp.Subscription.Purchaser.EmailID,
+		PurchaserOid:              *resp.Subscription.Purchaser.ObjectID,
+		PurchaserTid:              *resp.Subscription.Purchaser.TenantID,
+		PurchaserPuid:             *resp.Subscription.Purchaser.Puid,
+		Quantity:                  int(*resp.Quantity),
+		SaaSSubscriptionStatus:    models.SubscriptionStatusEnum(*resp.SaasSubscriptionStatus),
+		SandboxType:               models.SandboxTypeEnum(*resp.Subscription.SandboxType),
+		SessionId:                 ReadString(resp.Subscription.SessionID),
+		SessionMode:               models.SessionModeEnum(*resp.Subscription.SessionMode),
+		StoreFront:                ReadString(resp.Subscription.StoreFront),
+		SubscriptionTermStartDate: *resp.Subscription.Term.StartDate,
+		SubscriptionTermEndDate:   *resp.Subscription.Term.EndDate,
+	}
+}
 
 // --------------------------------------------------------------------------------
 // Resolve handler
@@ -95,7 +125,11 @@ func Activate(c *fiber.Ctx) error {
 	}
 
 	// get subscription
-	subscriptionResponse, err := client.GetSubscription(c.Context(), req.SubscriptionId, nil)
+	subscriptionResponse, err := client.GetSubscription(
+		c.Context(),
+		req.SubscriptionId,
+		&saasapi.FulfillmentOperationsClientGetSubscriptionOptions{},
+	)
 	if err != nil {
 		fmt.Println("error getting subscription:", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve subscription")
@@ -113,7 +147,11 @@ func Activate(c *fiber.Ctx) error {
 	}
 
 	// get activated subscription
-	activatedSubscriptionResponse, err := client.GetSubscription(c.Context(), req.SubscriptionId, nil)
+	activatedSubscriptionResponse, err := client.GetSubscription(
+		c.Context(),
+		req.SubscriptionId,
+		&saasapi.FulfillmentOperationsClientGetSubscriptionOptions{},
+	)
 	if err != nil {
 		fmt.Println("error getting activated subscription:", err)
 		return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve activated subscription")
@@ -123,32 +161,7 @@ func Activate(c *fiber.Ctx) error {
 	db := database.DB.DB
 
 	// populate new subscription
-	newSubscription := &models.Subscription{
-		AutoRenew:                 *activatedSubscriptionResponse.Subscription.AutoRenew,
-		BeneficiaryEmail:          *activatedSubscriptionResponse.Subscription.Beneficiary.EmailID,
-		BeneficiaryOid:            *activatedSubscriptionResponse.Subscription.Beneficiary.ObjectID,
-		BeneficiaryTid:            *activatedSubscriptionResponse.Subscription.Beneficiary.TenantID,
-		BeneficiaryPuid:           *activatedSubscriptionResponse.Subscription.Beneficiary.Puid,
-		Created:                   *activatedSubscriptionResponse.Subscription.Created,
-		Id:                        *activatedSubscriptionResponse.Subscription.ID,
-		IsTest:                    *activatedSubscriptionResponse.Subscription.IsTest,
-		Name:                      *activatedSubscriptionResponse.Subscription.Name,
-		OfferId:                   *activatedSubscriptionResponse.Subscription.OfferID,
-		PlanId:                    *activatedSubscriptionResponse.Subscription.PlanID,
-		PublisherId:               *activatedSubscriptionResponse.Subscription.PublisherID,
-		PurchaserEmail:            *activatedSubscriptionResponse.Subscription.Purchaser.EmailID,
-		PurchaserOid:              *activatedSubscriptionResponse.Subscription.Purchaser.ObjectID,
-		PurchaserTid:              *activatedSubscriptionResponse.Subscription.Purchaser.TenantID,
-		PurchaserPuid:             *activatedSubscriptionResponse.Subscription.Purchaser.Puid,
-		Quantity:                  int(*activatedSubscriptionResponse.Quantity),
-		SaaSSubscriptionStatus:    models.SubscriptionStatusEnum(*activatedSubscriptionResponse.SaasSubscriptionStatus),
-		SandboxType:               models.SandboxTypeEnum(*activatedSubscriptionResponse.Subscription.SandboxType),
-		SessionId:                 ReadString(activatedSubscriptionResponse.Subscription.SessionID),
-		SessionMode:               models.SessionModeEnum(*activatedSubscriptionResponse.Subscription.SessionMode),
-		StoreFront:                ReadString(activatedSubscriptionResponse.Subscription.StoreFront),
-		SubscriptionTermStartDate: *activatedSubscriptionResponse.Subscription.Term.StartDate,
-		SubscriptionTermEndDate:   *activatedSubscriptionResponse.Subscription.Term.EndDate,
-	}
+	newSubscription := makeSubscription(activatedSubscriptionResponse)
 
 	// check if subscription in db... if no, create it; if so, update it
 	query := db.Where("id = ?", req.SubscriptionId).Find(&models.Subscription{})
@@ -159,7 +172,7 @@ func Activate(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not create subscription")
 		}
 	} else {
-		tx := db.Model(&models.Subscription{}).Where("id = ?", req.SubscriptionId).Updates(*newSubscription)
+		tx := db.Model(&models.Subscription{}).Where("id = ?", req.SubscriptionId).Updates(newSubscription)
 		if tx.Error != nil {
 			fmt.Println("db error updating subscription:", tx.Error)
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not update subscription")
@@ -173,3 +186,133 @@ func Activate(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// --------------------------------------------------------------------------------
+// Webhook ChangePlan handler
+// --------------------------------------------------------------------------------
+type ChangePlanRequest struct {
+	Id                     string                      `json:"id"`
+	ActivityId             string                      `json:"activityId"`
+	OperationRequestSource string                      `json:"operationRequestSource"`
+	SubscriptionId         string                      `json:"subscriptionId"`
+	TimeStamp              time.Time                   `json:"timeStamp"`
+	Action                 saasapi.OperationActionEnum `json:"action"`
+}
+
+type ChangePlanResponse struct {
+	Success bool `json:"success"`
+}
+
+func ChangePlan(c *fiber.Ctx) error {
+	// get request body
+	req := new(ChangePlanRequest)
+	if err := c.BodyParser(req); err != nil {
+		return err
+	}
+
+	// validate request body
+	if req.SubscriptionId == "" || req.Id == "" || req.Action == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	// create subscription operations client
+	operationsClient, err := saasapi.NewDefaultSubscriptionOperationsClient()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "could not create subscription operations client")
+	}
+
+	// get operation
+	operationStatusResponse, err := operationsClient.GetOperationStatus(
+		c.Context(),
+		req.SubscriptionId,
+		req.Id,
+		&saasapi.SubscriptionOperationsClientGetOperationStatusOptions{},
+	)
+	if err != nil {
+		fmt.Println("error getting operation:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve operation")
+	}
+	operationJSON, err := operationStatusResponse.MarshalJSON()
+	if err != nil {
+		fmt.Println("error marshalling operation:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "could not marshal operation")
+	}
+	fmt.Println("operation:", string(operationJSON))
+
+	// update operation status
+	quantity := int64(*operationStatusResponse.Quantity)
+	status := saasapi.UpdateOperationStatusEnumSuccess
+	updateOperation := &saasapi.UpdateOperation{
+		PlanID:   operationStatusResponse.PlanID,
+		Quantity: &quantity,
+		Status:   &status,
+	}
+	_, err = operationsClient.UpdateOperationStatus(
+		c.Context(),
+		*operationStatusResponse.SubscriptionID,
+		*operationStatusResponse.ID,
+		*updateOperation,
+		&saasapi.SubscriptionOperationsClientUpdateOperationStatusOptions{},
+	)
+	if err != nil {
+		fmt.Println("error updating operation:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "could not update operation")
+	}
+
+	// create fulfillment api client
+	fulfillmentClient, err := saasapi.NewDefaultFulfillmentOperationsClient()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "could not create fulfillment api client")
+	}
+
+	// get subscription
+	subscriptionResponse, err := fulfillmentClient.GetSubscription(
+		c.Context(),
+		*operationStatusResponse.SubscriptionID,
+		&saasapi.FulfillmentOperationsClientGetSubscriptionOptions{},
+	)
+	if err != nil {
+		fmt.Println("error getting subscription:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve subscription")
+	}
+
+	// get database connection
+	db := database.DB.DB
+
+	// populate new subscription
+	newSubscription := makeSubscription(subscriptionResponse)
+
+	// check if subscription in db... if no, create it; if so, update it
+	query := db.Where("id = ?", newSubscription.Id).Find(&models.Subscription{})
+	if query.RowsAffected == 0 {
+		tx := db.Create(newSubscription)
+		if tx.Error != nil {
+			fmt.Println("db error creating subscription:", tx.Error)
+			return fiber.NewError(fiber.StatusInternalServerError, "db could not create subscription")
+		}
+	} else {
+		tx := db.Model(&models.Subscription{}).Where("id = ?", newSubscription.Id).Updates(newSubscription)
+		if tx.Error != nil {
+			fmt.Println("db error updating subscription:", tx.Error)
+			return fiber.NewError(fiber.StatusInternalServerError, "db could not update subscription")
+		}
+	}
+
+	// return response
+	response := &ChangePlanResponse{
+		Success: true,
+	}
+	return c.JSON(response)
+}
+
+// todo:
+// - webhook handlers
+// - when the subscription status is Subscribed:
+// -- ChangePlan handler (done)
+// -- ChangeQuantity handler
+// -- Renew handler
+// -- Suspend handler
+// -- Unsubscribe handler
+// - when the subscription status is Suspended:
+// -- Reinstate handler
+// -- Unsubscribe handler
