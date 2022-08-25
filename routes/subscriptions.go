@@ -258,24 +258,29 @@ func GenericAction(c *fiber.Ctx) error {
 	}
 	fmt.Println("operation:", string(operationJSON))
 
-	// update operation status
-	quantity := int64(*operationStatusResponse.Quantity)
-	status := saasapi.UpdateOperationStatusEnumSuccess
-	updateOperation := &saasapi.UpdateOperation{
-		PlanID:   operationStatusResponse.PlanID,
-		Quantity: &quantity,
-		Status:   &status,
-	}
-	_, err = operationsClient.UpdateOperationStatus(
-		c.Context(),
-		*operationStatusResponse.SubscriptionID,
-		*operationStatusResponse.ID,
-		*updateOperation,
-		&saasapi.SubscriptionOperationsClientUpdateOperationStatusOptions{},
-	)
-	if err != nil {
-		fmt.Println("error updating operation:", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "could not update operation")
+	// update operation status if action is "Reinstate", "ChangePlan", or "ChangeQuantity"
+	action := *operationStatusResponse.Action
+	if action == saasapi.OperationActionEnumReinstate ||
+		action == saasapi.OperationActionEnumChangePlan ||
+		action == saasapi.OperationActionEnumChangeQuantity {
+		quantity := int64(*operationStatusResponse.Quantity)
+		status := saasapi.UpdateOperationStatusEnumSuccess
+		updateOperation := &saasapi.UpdateOperation{
+			PlanID:   operationStatusResponse.PlanID,
+			Quantity: &quantity,
+			Status:   &status,
+		}
+		_, err = operationsClient.UpdateOperationStatus(
+			c.Context(),
+			*operationStatusResponse.SubscriptionID,
+			*operationStatusResponse.ID,
+			*updateOperation,
+			&saasapi.SubscriptionOperationsClientUpdateOperationStatusOptions{},
+		)
+		if err != nil {
+			fmt.Println("error updating operation:", err)
+			return fiber.NewError(fiber.StatusInternalServerError, "could not update operation")
+		}
 	}
 
 	// create fulfillment api client
