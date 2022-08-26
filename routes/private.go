@@ -16,14 +16,14 @@ func PrivateWelcome(c *fiber.Ctx) error {
 }
 
 // --------------------------------------------------------------------------------
-// Update License request handler
+// Update Trial request handler
 // --------------------------------------------------------------------------------
-type UpdateLicenseResponse struct {
-	Success bool               `json:"success"`
-	License models.UserLicense `json:"license"`
+type UpdateTrialResponse struct {
+	Success bool              `json:"success"`
+	User    models.TenantUser `json:"user"`
 }
 
-func UpdateLicense(c *fiber.Ctx) error {
+func UpdateTrial(c *fiber.Ctx) error {
 	// extract claims from JWT
 	claims, err := getClaimsFromJWT(c)
 	if err != nil {
@@ -34,32 +34,31 @@ func UpdateLicense(c *fiber.Ctx) error {
 	// get database connection
 	db := database.DB.DB
 
-	// get license
-	license := &models.UserLicense{
-		Oid: claims.Oid,
-	}
-	query := db.Where("oid = ?", license.Oid).Find(license)
+	// get user
+	user := &models.TenantUser{}
+	query := db.Where("oid = ?", claims.Oid).Find(user)
 	if query.RowsAffected == 0 {
-		fmt.Println("license not found for user:", license.Oid)
+		fmt.Println("user not found:", claims.Oid)
 		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 	}
+	fmt.Println("found user:", user)
 
-	// update license
-	if !license.TrialActivated {
-		tx := db.Model(license).Updates(models.UserLicense{
+	// update trial
+	if !user.TrialActivated {
+		tx := db.Model(user).Updates(models.TenantUser{
 			TrialActivated: true,
 			TrialExpiresAt: time.Now().Add(time.Hour * 24 * 30),
 		})
 		if tx.Error != nil {
-			fmt.Println("error updating license:", tx.Error)
+			fmt.Println("error updating trial:", tx.Error)
 			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 		}
 	}
 
 	// return response
-	response := &UpdateLicenseResponse{
+	response := &UpdateTrialResponse{
 		Success: true,
-		License: *license,
+		User:    *user,
 	}
 	return c.JSON(response)
 
@@ -69,9 +68,7 @@ func UpdateLicense(c *fiber.Ctx) error {
 // Get World request handler
 // --------------------------------------------------------------------------------
 type GetWorldResponse struct {
-	Teams   []models.TeamInfo  `json:"teams"`
-	User    models.TenantUser  `json:"user"`
-	License models.UserLicense `json:"license"`
+	Teams []models.TeamInfo `json:"teams"`
 }
 
 func GetWorld(c *fiber.Ctx) error {
@@ -92,13 +89,16 @@ func GetWorld(c *fiber.Ctx) error {
 		fmt.Println("user not found for user:", claims.Oid)
 		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 	}
+	fmt.Println("found user:", user)
 
-	// get license
-	license := &models.UserLicense{}
-	query = db.Where("oid = ?", claims.Oid).Find(license)
-	if query.RowsAffected == 0 {
-		fmt.Println("license not found for user:", claims.Oid)
-		return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+	// get subscription
+	subscription := &models.Subscription{}
+	if user.SubscriptionId != "" {
+		query = db.Where("id = ?", user.SubscriptionId).Find(subscription)
+		if query.RowsAffected == 0 {
+			fmt.Println("subscription not found:", user.SubscriptionId)
+			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
+		}
 	}
 
 	teamInfos := []models.TeamInfo{}
@@ -131,10 +131,10 @@ func GetWorld(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 		}
 
-		// check if license if active or trial is active
-		licenseActive := license.LicenseStatus == models.Active
-		trialActive := license.TrialActivated && (time.Now().Unix() < license.TrialExpiresAt.Unix())
-		canJoin := licenseActive || trialActive
+		// check if subscription is active or trial is active
+		subscriptionActive := subscription.SaaSSubscriptionStatus == models.SubscriptionStatusEnumSubscribed
+		trialActive := user.TrialActivated && (time.Now().Unix() < user.TrialExpiresAt.Unix())
+		canJoin := subscriptionActive || trialActive
 
 		// for each room, get LivekitJoinToken
 		for _, room := range rooms {
@@ -171,9 +171,7 @@ func GetWorld(c *fiber.Ctx) error {
 
 	// return response
 	response := &GetWorldResponse{
-		Teams:   teamInfos,
-		User:    *user,
-		License: *license,
+		Teams: teamInfos,
 	}
 	return c.JSON(response)
 }

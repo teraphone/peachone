@@ -7,15 +7,18 @@ import (
 )
 
 type TenantUser struct {
-	Oid       string    `gorm:"primary_key" json:"oid"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Tid       string    `json:"tid"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Oid            string    `gorm:"primary_key" json:"oid"`
+	Name           string    `json:"name"`
+	Email          string    `json:"email"`
+	Tid            string    `json:"tid"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+	SubscriptionId string    `json:"subscriptionId"` // fk: Subscription.Id
+	TrialActivated bool      `json:"trialActivated"`
+	TrialExpiresAt time.Time `json:"trialExpiresAt"`
 }
 
-type UserLicense struct {
+type UserLicense struct { // todo: Delete this table
 	Oid                string        `gorm:"primary_key" json:"oid"` // fk: TenantUser.Oid
 	Tid                string        `json:"tid"`
 	LicenseExpiresAt   time.Time     `json:"licenseExpiresAt"`
@@ -65,4 +68,31 @@ type TeamInfo struct {
 	Team  TenantTeam   `json:"team"`
 	Rooms []RoomInfo   `json:"rooms"`
 	Users []TenantUser `json:"users"`
+}
+
+type Subscription struct {
+	AutoRenew                 bool                   `json:"autoRenew"`
+	BeneficiaryEmail          string                 `json:"beneficiaryEmail"`
+	BeneficiaryOid            string                 `json:"beneficiaryOid"` // not a foreign key: user may not exist (yet)
+	BeneficiaryTid            string                 `json:"beneficiaryTid"`
+	BeneficiaryPuid           string                 `json:"beneficiaryPuid"`
+	Created                   time.Time              `json:"createdAt"`
+	Id                        string                 `gorm:"primary_key" json:"id"`
+	IsTest                    bool                   `json:"isTest"`
+	Name                      string                 `json:"name"`
+	OfferId                   string                 `json:"offerId"`
+	PlanId                    string                 `json:"planId"`
+	PublisherId               string                 `json:"publisherId"`
+	PurchaserEmail            string                 `json:"purchaserEmail"`
+	PurchaserOid              string                 `json:"purchaserOid"` // not a foreign key: user may be a CSP
+	PurchaserTid              string                 `json:"purchaserTid"`
+	PurchaserPuid             string                 `json:"purchaserPuid"`
+	Quantity                  int                    `json:"quantity"`
+	SaaSSubscriptionStatus    SubscriptionStatusEnum `json:"saasSubscriptionStatus"`
+	SandboxType               SandboxTypeEnum        `json:"sandboxType"`
+	SessionId                 string                 `json:"sessionId"`
+	SessionMode               SessionModeEnum        `json:"sessionMode"`
+	StoreFront                string                 `json:"storeFront"`
+	SubscriptionTermStartDate time.Time              `json:"subscriptionTermStartDate"`
+	SubscriptionTermEndDate   time.Time              `json:"subscriptionTermEndDate"`
 }

@@ -99,8 +99,42 @@ func NewOBOProvider(userAccessToken string) (*TokenCredentialHelper, *kiota.Azur
 
 }
 
+func NewOBOProviderWithScopes(userAccessToken string, scopes []string) (*TokenCredentialHelper, *kiota.AzureIdentityAuthenticationProvider, error) {
+	cred, err := NewTokenCredentialHelper(userAccessToken)
+	if err != nil {
+		fmt.Println("Error creating credential:", err)
+		return nil, nil, err
+	}
+
+	provider, err := kiota.NewAzureIdentityAuthenticationProviderWithScopes(cred, scopes)
+	if err != nil {
+		fmt.Println("Error creating auth provider:", err)
+		return nil, nil, err
+	}
+
+	return cred, provider, nil
+}
+
 func NewMSGraphClient(userAccessToken string) (*TokenCredentialHelper, *msgraphsdk.GraphServiceClient, error) {
 	cred, auth, err := NewOBOProvider(userAccessToken)
+	if err != nil {
+		fmt.Println("Error creating auth provider:", err)
+		return nil, nil, err
+	}
+
+	adapter, err := msgraphsdk.NewGraphRequestAdapter(auth)
+	if err != nil {
+		fmt.Println("Error creating adapter:", err)
+		return nil, nil, err
+	}
+
+	client := msgraphsdk.NewGraphServiceClient(adapter)
+
+	return cred, client, nil
+}
+
+func NewMSGraphClientWithScopes(userAccessToken string, scopes []string) (*TokenCredentialHelper, *msgraphsdk.GraphServiceClient, error) {
+	cred, auth, err := NewOBOProviderWithScopes(userAccessToken, scopes)
 	if err != nil {
 		fmt.Println("Error creating auth provider:", err)
 		return nil, nil, err

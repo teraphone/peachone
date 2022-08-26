@@ -78,3 +78,27 @@ func (s RoomType) String() string {
 		return "unknown"
 	}
 }
+
+type SubscriptionStatusEnum string
+
+const (
+	SubscriptionStatusEnumNotStarted              SubscriptionStatusEnum = "NotStarted"
+	SubscriptionStatusEnumPendingFulfillmentStart SubscriptionStatusEnum = "PendingFulfillmentStart"
+	SubscriptionStatusEnumSubscribed              SubscriptionStatusEnum = "Subscribed"
+	SubscriptionStatusEnumSuspended               SubscriptionStatusEnum = "Suspended"
+	SubscriptionStatusEnumUnsubscribed            SubscriptionStatusEnum = "Unsubscribed"
+)
+
+type SandboxTypeEnum string
+
+const (
+	SandboxTypeEnumNone SandboxTypeEnum = "None"
+	SandboxTypeEnumCsp  SandboxTypeEnum = "Csp"
+)
+
+type SessionModeEnum string
+
+const (
+	SessionModeEnumNone   SessionModeEnum = "None"
+	SessionModeEnumDryRun SessionModeEnum = "DryRun"
+)
