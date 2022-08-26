@@ -258,24 +258,29 @@ func GenericAction(c *fiber.Ctx) error {
 	}
 	fmt.Println("operation:", string(operationJSON))
 
-	// update operation status
-	quantity := int64(*operationStatusResponse.Quantity)
-	status := saasapi.UpdateOperationStatusEnumSuccess
-	updateOperation := &saasapi.UpdateOperation{
-		PlanID:   operationStatusResponse.PlanID,
-		Quantity: &quantity,
-		Status:   &status,
-	}
-	_, err = operationsClient.UpdateOperationStatus(
-		c.Context(),
-		*operationStatusResponse.SubscriptionID,
-		*operationStatusResponse.ID,
-		*updateOperation,
-		&saasapi.SubscriptionOperationsClientUpdateOperationStatusOptions{},
-	)
-	if err != nil {
-		fmt.Println("error updating operation:", err)
-		return fiber.NewError(fiber.StatusInternalServerError, "could not update operation")
+	// update operation status if action is "Reinstate", "ChangePlan", or "ChangeQuantity"
+	action := *operationStatusResponse.Action
+	if action == saasapi.OperationActionEnumReinstate ||
+		action == saasapi.OperationActionEnumChangePlan ||
+		action == saasapi.OperationActionEnumChangeQuantity {
+		quantity := int64(*operationStatusResponse.Quantity)
+		status := saasapi.UpdateOperationStatusEnumSuccess
+		updateOperation := &saasapi.UpdateOperation{
+			PlanID:   operationStatusResponse.PlanID,
+			Quantity: &quantity,
+			Status:   &status,
+		}
+		_, err = operationsClient.UpdateOperationStatus(
+			c.Context(),
+			*operationStatusResponse.SubscriptionID,
+			*operationStatusResponse.ID,
+			*updateOperation,
+			&saasapi.SubscriptionOperationsClientUpdateOperationStatusOptions{},
+		)
+		if err != nil {
+			fmt.Println("error updating operation:", err)
+			return fiber.NewError(fiber.StatusInternalServerError, "could not update operation")
+		}
 	}
 
 	// create fulfillment api client
@@ -302,7 +307,8 @@ func GenericAction(c *fiber.Ctx) error {
 	newSubscription := makeSubscription(subscriptionResponse)
 
 	// check if subscription in db... if no, create it; if so, update it
-	query := db.Where("id = ?", newSubscription.Id).Find(&models.Subscription{})
+	currentSubscription := &models.Subscription{}
+	query := db.Where("id = ?", newSubscription.Id).Find(currentSubscription)
 	if query.RowsAffected == 0 {
 		tx := db.Create(newSubscription)
 		if tx.Error != nil {
@@ -310,6 +316,14 @@ func GenericAction(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not create subscription")
 		}
 	} else {
+		// check if new sub has lower quantity. if so, send email.
+		if newSubscription.Quantity < currentSubscription.Quantity {
+			// send email
+			_, _, err := SendSubscriptionDowngradeAlert(c.Context(), newSubscription, currentSubscription)
+			if err != nil {
+				fmt.Println("error sending subscription downgrade alert for subscriptionId:", newSubscription.Id, err)
+			}
+		}
 		tx := db.Model(&models.Subscription{}).Where("id = ?", newSubscription.Id).Updates(newSubscription)
 		if tx.Error != nil {
 			fmt.Println("db error updating subscription:", tx.Error)
