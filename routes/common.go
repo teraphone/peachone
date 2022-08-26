@@ -3,6 +3,7 @@ package routes
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -288,4 +289,66 @@ func ReadString(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func SendSubscriptionDowngradeAlert(ctx context.Context, newSub *models.Subscription, oldSub *models.Subscription) (mes string, id string, err error) {
+	// email template
+	htmlSubscriptionDowngradeAlertTemplate := `
+<html>
+	<body>
+		<p>Subscription Downgrade Alert</p>
+		<p>Old Subscription:</p>
+		<p>{{.OldSubJSON}}</p>
+		<p>New Subscription:</p>
+		<p>{{.NewSubJSON}}</p>
+	</body>
+</html>
+`
+	type TemplateVars struct {
+		OldSubJSON string
+		NewSubJSON string
+	}
+
+	newSubJSON, err := json.MarshalIndent(*newSub, "", "  ")
+	if err != nil {
+		return "", "", err
+	}
+
+	oldSubJSON, err := json.MarshalIndent(*oldSub, "", "  ")
+	if err != nil {
+		return "", "", err
+	}
+
+	templateVars := &TemplateVars{
+		OldSubJSON: string(oldSubJSON),
+		NewSubJSON: string(newSubJSON),
+	}
+
+	// create email message
+	mg := CreateMailgunClient()
+	message := mg.NewMessage("alerts@teraphone.app", "Subscription Downgrade", "", "help@teraphone.app")
+	parsedHtmlTemplate, err := template.New("body").Parse(htmlSubscriptionDowngradeAlertTemplate)
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	var htmlBuffer bytes.Buffer
+	if err := parsedHtmlTemplate.Execute(&htmlBuffer, templateVars); err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	message.SetHtml(htmlBuffer.String())
+
+	// send message with 10 second timeout
+	log.Printf("Sending alert to help@teraphone.app")
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	resp, id, err := mg.Send(ctxWithTimeout, message)
+	if err != nil {
+		fmt.Println(err.Error())
+		return resp, id, err
+	}
+	log.Printf("ID: %s Resp: %s", id, resp)
+
+	return resp, id, nil
 }
