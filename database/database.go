@@ -25,7 +25,6 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE team_users DROP CONSTRAINT fk_team_users_id;",
 		"ALTER TABLE team_users DROP CONSTRAINT fk_team_users_oid;",
 		"ALTER TABLE team_rooms DROP CONSTRAINT fk_team_rooms_team_id;",
-		"ALTER TABLE tenant_users DROP CONSTRAINT fk_tenant_users_subscription_id;",
 	}
 	// run sql statements
 	for _, sql := range sql_drop_constraints {
@@ -46,7 +45,6 @@ func InitDBTables(db *gorm.DB) {
 		"ALTER TABLE team_users ADD CONSTRAINT fk_team_users_id FOREIGN KEY (id) REFERENCES tenant_teams(id) ON DELETE CASCADE;",
 		"ALTER TABLE team_users ADD CONSTRAINT fk_team_users_oid FOREIGN KEY (oid) REFERENCES tenant_users(oid) ON DELETE CASCADE;",
 		"ALTER TABLE team_rooms ADD CONSTRAINT fk_team_rooms_team_id FOREIGN KEY (team_id) REFERENCES tenant_teams(id) ON DELETE CASCADE;",
-		"ALTER TABLE tenant_users ADD CONSTRAINT fk_tenant_users_subscription_id FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE SET NULL;",
 	}
 	// run sql statements
 	for _, sql := range sql_add_constraints {
