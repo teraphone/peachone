@@ -337,3 +337,75 @@ func GenericAction(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 }
+
+// --------------------------------------------------------------------------------
+// Get Subscriptions Request
+// --------------------------------------------------------------------------------
+type TenantSubscriptions map[string][]models.Subscription
+
+type GetSubscriptionsResponse struct {
+	Success       bool                `json:"success"`
+	Subscriptions TenantSubscriptions `json:"subscriptions"`
+}
+
+func GetSubscriptions(c *fiber.Ctx) error {
+	// check JWT
+	claims, err := getClaimsFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "expired jwt")
+	}
+
+	// get database connection
+	db := database.DB.DB
+
+	// get user, user subscription (if exists)
+	user := &models.TenantUser{}
+	hasUserSubscription := false
+	userSubscription := &models.Subscription{}
+	query := db.Where("oid = ?", claims.Oid).Find(user)
+	if query.RowsAffected != 0 {
+		query = db.Where("id = ?", user.SubscriptionId).Find(userSubscription)
+		if query.RowsAffected != 0 {
+			hasUserSubscription = true
+		}
+	}
+
+	// get admin (purchaser/beneficiary) subscriptions?
+	hasAdminSubscriptions := false
+	adminSubscriptions := []models.Subscription{}
+	query = db.Where("beneficiary_oid = ? OR purchaser_oid = ?", claims.Oid, claims.Oid).Find(&adminSubscriptions)
+	if query.RowsAffected != 0 {
+		hasAdminSubscriptions = true
+	}
+
+	// populate TenantSubscriptions
+	tenantSubscriptions := make(TenantSubscriptions)
+	if hasUserSubscription {
+		tenantSubscriptions[user.Tid] = []models.Subscription{}
+		tenantSubscriptions[user.Tid] = append(tenantSubscriptions[user.Tid], *userSubscription)
+	}
+	if hasAdminSubscriptions {
+		for _, adminSubscription := range adminSubscriptions {
+			var tid string
+			if adminSubscription.PurchaserOid == claims.Oid {
+				tid = adminSubscription.PurchaserTid
+			} else {
+				tid = adminSubscription.BeneficiaryTid
+			}
+			if _, ok := tenantSubscriptions[tid]; !ok {
+				tenantSubscriptions[tid] = []models.Subscription{}
+			}
+			tenantSubscriptions[tid] = append(tenantSubscriptions[tid], adminSubscription)
+		}
+	}
+
+	// todo: finish this
+
+	// create response
+	response := &GetSubscriptionsResponse{
+		Success:       true,
+		Subscriptions: make(TenantSubscriptions),
+	}
+
+	return c.JSON(response)
+}
