@@ -94,6 +94,9 @@ func setupSubscriptions(app *fiber.App) {
 	// Get subscriptions
 	subscriptions.Get("/", routes.GetSubscriptions)
 
+	// Get users by tenant
+	subscriptions.Get("/:tid/users", routes.GetUsersByTenant)
+
 	// Assign subscription to user
 	subscriptions.Patch("/:tid/users/:oid", routes.AssignUserSubscription)
 }

@@ -524,3 +524,62 @@ func AssignUserSubscription(c *fiber.Ctx) error {
 	return c.JSON(response)
 
 }
+
+// --------------------------------------------------------------------------------
+// Get Users By Tenant
+// --------------------------------------------------------------------------------
+type GetUsersByTenantResponse struct {
+	Success bool                `json:"success"`
+	Users   []models.TenantUser `json:"users"`
+}
+
+func GetUsersByTenant(c *fiber.Ctx) error {
+	// check JWT
+	claims, err := getClaimsFromJWT(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "expired jwt")
+	}
+
+	// get tenantId from request
+	tid := c.Params("tid")
+
+	// get database connection
+	db := database.DB.DB
+
+	// check if user has admin access to this tenant or is a user of this tenant
+	var hasAccess = false
+	if claims.Tid == tid {
+		hasAccess = true
+	} else {
+		// check if user is admin of any subscriptions for this tenant
+		subscriptions := []models.Subscription{}
+		query := db.Where("beneficiary_oid = ? OR purchaser_oid = ?", claims.Oid, claims.Oid).Find(&subscriptions)
+		if query.RowsAffected > 0 {
+			for _, subscription := range subscriptions {
+				if subscription.BeneficiaryTid == tid {
+					hasAccess = true
+					break
+				}
+			}
+		}
+	}
+
+	if !hasAccess {
+		return fiber.NewError(fiber.StatusForbidden, "user does not have access to this tenant")
+	}
+
+	// get users
+	users := []models.TenantUser{}
+	query := db.Where("tid = ?", tid).Find(&users)
+	if query.Error != nil {
+		fmt.Println("db error getting users:", query.Error)
+		return fiber.NewError(fiber.StatusInternalServerError, "could not get users")
+	}
+
+	// create response
+	response := &GetUsersByTenantResponse{
+		Success: true,
+		Users:   users,
+	}
+	return c.JSON(response)
+}
