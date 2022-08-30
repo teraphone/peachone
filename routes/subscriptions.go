@@ -442,7 +442,7 @@ func AssignUserSubscription(c *fiber.Ctx) error {
 
 	// get user
 	user := &models.TenantUser{}
-	query := db.Where("oid = ?", oid).Find(user)
+	query := db.Where("oid = ? AND tid = ?", oid, tid).Find(user)
 	if query.RowsAffected == 0 {
 		return fiber.NewError(fiber.StatusNotFound, "user not found")
 	}
