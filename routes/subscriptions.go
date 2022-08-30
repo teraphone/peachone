@@ -400,6 +400,7 @@ func GetSubscriptions(c *fiber.Ctx) error {
 	}
 
 	// todo: finish this
+	// - should TenantSubscriptions be map[string]map[string]models.Subscription instead?
 
 	// create response
 	response := &GetSubscriptionsResponse{
