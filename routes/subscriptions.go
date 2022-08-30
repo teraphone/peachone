@@ -381,6 +381,7 @@ func GetSubscriptions(c *fiber.Ctx) error {
 	// populate TenantSubscriptions
 	tenantSubscriptions := make(TenantSubscriptions)
 	if hasUserSubscription {
+		tenantSubscriptions[user.Tid] = make(map[string]models.Subscription)
 		tenantSubscriptions[user.Tid][userSubscription.Id] = *userSubscription
 	}
 	if hasAdminSubscriptions {
@@ -390,6 +391,9 @@ func GetSubscriptions(c *fiber.Ctx) error {
 				tid = adminSubscription.PurchaserTid
 			} else {
 				tid = adminSubscription.BeneficiaryTid
+			}
+			if _, ok := tenantSubscriptions[tid]; !ok {
+				tenantSubscriptions[tid] = make(map[string]models.Subscription)
 			}
 			tenantSubscriptions[tid][adminSubscription.Id] = adminSubscription
 		}
