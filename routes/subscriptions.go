@@ -341,7 +341,7 @@ func GenericAction(c *fiber.Ctx) error {
 // --------------------------------------------------------------------------------
 // Get Subscriptions Request
 // --------------------------------------------------------------------------------
-type TenantSubscriptions map[string][]models.Subscription
+type TenantSubscriptions map[string]map[string]models.Subscription
 
 type GetSubscriptionsResponse struct {
 	Success       bool                `json:"success"`
@@ -381,8 +381,7 @@ func GetSubscriptions(c *fiber.Ctx) error {
 	// populate TenantSubscriptions
 	tenantSubscriptions := make(TenantSubscriptions)
 	if hasUserSubscription {
-		tenantSubscriptions[user.Tid] = []models.Subscription{}
-		tenantSubscriptions[user.Tid] = append(tenantSubscriptions[user.Tid], *userSubscription)
+		tenantSubscriptions[user.Tid][userSubscription.Id] = *userSubscription
 	}
 	if hasAdminSubscriptions {
 		for _, adminSubscription := range adminSubscriptions {
@@ -392,20 +391,14 @@ func GetSubscriptions(c *fiber.Ctx) error {
 			} else {
 				tid = adminSubscription.BeneficiaryTid
 			}
-			if _, ok := tenantSubscriptions[tid]; !ok {
-				tenantSubscriptions[tid] = []models.Subscription{}
-			}
-			tenantSubscriptions[tid] = append(tenantSubscriptions[tid], adminSubscription)
+			tenantSubscriptions[tid][adminSubscription.Id] = adminSubscription
 		}
 	}
-
-	// todo: finish this
-	// - should TenantSubscriptions be map[string]map[string]models.Subscription instead?
 
 	// create response
 	response := &GetSubscriptionsResponse{
 		Success:       true,
-		Subscriptions: make(TenantSubscriptions),
+		Subscriptions: tenantSubscriptions,
 	}
 
 	return c.JSON(response)
