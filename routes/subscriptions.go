@@ -508,7 +508,7 @@ func AssignUserSubscription(c *fiber.Ctx) error {
 		fmt.Println("db error counting users:", tx.Error)
 		return fiber.NewError(fiber.StatusInternalServerError, "could not assign subscription")
 	}
-	if count >= int64(targetSubscription.Quantity) {
+	if count >= int64(targetSubscription.Quantity) && assigning {
 		return fiber.NewError(fiber.StatusForbidden, "not enough seats available")
 	}
 
