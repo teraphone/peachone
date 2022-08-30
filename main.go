@@ -90,6 +90,12 @@ func setupSubscriptions(app *fiber.App) {
 
 	// Activate subscription
 	subscriptions.Post("/activate", routes.Activate)
+
+	// Get subscriptions
+	subscriptions.Get("/", routes.GetSubscriptions)
+
+	// Assign subscription to user
+	subscriptions.Patch("/:tid/users/:oid", routes.AssignUserSubscription)
 }
 
 func main() {
