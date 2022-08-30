@@ -501,23 +501,34 @@ func AssignUserSubscription(c *fiber.Ctx) error {
 		}
 	}
 
-	// check if there are seats available
-	var count int64 = 0
-	tx := db.Model(&models.TenantUser{}).Where("subscription_id = ?", targetSubscription.Id).Count(&count)
-	if tx.Error != nil {
-		fmt.Println("db error counting users:", tx.Error)
-		return fiber.NewError(fiber.StatusInternalServerError, "could not assign subscription")
-	}
-	if count >= int64(targetSubscription.Quantity) && assigning {
-		return fiber.NewError(fiber.StatusForbidden, "not enough seats available")
+	// check if subscription is already assigned to user
+	isNewSubscription := false
+	if targetSubscription.Id != user.SubscriptionId {
+		isNewSubscription = true
 	}
 
-	// update user
-	user.SubscriptionId = req.SubscriptionId
-	tx = db.Model(user).Update("subscription_id", req.SubscriptionId)
-	if tx.Error != nil {
-		fmt.Println("db error updating subscription:", tx.Error)
-		return fiber.NewError(fiber.StatusInternalServerError, "could not assign subscription")
+	// assign subscription
+	if isNewSubscription {
+
+		// check if there are seats available
+		var count int64 = 0
+		tx := db.Model(&models.TenantUser{}).Where("subscription_id = ?", targetSubscription.Id).Count(&count)
+		if tx.Error != nil {
+			fmt.Println("db error counting users:", tx.Error)
+			return fiber.NewError(fiber.StatusInternalServerError, "could not assign subscription")
+		}
+		if count >= int64(targetSubscription.Quantity) && assigning {
+			return fiber.NewError(fiber.StatusForbidden, "not enough seats available")
+		}
+
+		// update user
+		user.SubscriptionId = req.SubscriptionId
+		tx = db.Model(user).Update("subscription_id", req.SubscriptionId)
+		if tx.Error != nil {
+			fmt.Println("db error updating subscription:", tx.Error)
+			return fiber.NewError(fiber.StatusInternalServerError, "could not assign subscription")
+		}
+
 	}
 
 	// create response
