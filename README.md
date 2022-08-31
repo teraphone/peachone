@@ -127,16 +127,24 @@ Note: the SERVICE_ACCOUNT_JSON environment variable is necessary for local devel
 /livekit
 - POST: receive a webhook from the livekit server
 
-## /v1/subscritpions
+## /v1/subscriptions
+/
+- GET: returns the subscription objects that the user has read and/or write access to
+  - if the user is not a purchaser or beneficiary: they get back the subscription assigned to them (if it exists)
+  - if the user is a beneficiary: the get back the subscription objects for their tenantId (may be multiple)
+  - if the user is a purchaser: they get back the subscription objects for each tenantId for which they are a purchaser
+
+/:tenantId/users
+- GET: returns all TenantUsers for the tenantId
+
+/:tenantId/users/:userId
+- PATCH: update the user's subscription assignment
+
 /resolve
 - POST: exchange purchase token for subscription information
 
 /activate
 - POST: send a subscriptionId to activate
-
-/users
-- GET: returns a list of TenantUsers and their subscriptions
-
 
 # Docker Image
 ## Build & Push Docker Image
