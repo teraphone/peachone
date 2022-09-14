@@ -99,6 +99,9 @@ Note: the SERVICE_ACCOUNT_JSON environment variable is necessary for local devel
 /auth
 - POST: authenticate with a microsoft access token (doens't create a new user)
 
+/connection-test-token
+- GET: returns a connection test token
+
 ## /v1/private (requires auth token)
 /
 - GET: displays a private welcome message
