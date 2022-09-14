@@ -37,6 +37,7 @@ func setupPublic(app *fiber.App) {
 	public.Post("/login", routes.Login)
 	public.Post("/email-signup", routes.EmailSignup)
 	public.Post("/auth", routes.Auth)
+	public.Get("/connection-test-token", routes.GetConnectionTestToken)
 
 }
 
