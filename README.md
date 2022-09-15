@@ -187,6 +187,12 @@ Ran into issues due to image being built on my Apple Silicon Mac (arm64), causin
 
 If you don't have an Artifact Registry repo yet you can create one [here](https://console.cloud.google.com/artifacts).
 
+For container registry:
+
+    ```
+    docker buildx build --platform linux/amd64 -t gcr.io/livekit-demo/peachone/peachone:latest . --push
+    ```
+
 ## Run Docker Image Locally
 
 Instructions for testing locally can be found [here](https://cloud.google.com/run/docs/testing/local#docker).
