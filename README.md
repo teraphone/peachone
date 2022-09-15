@@ -99,6 +99,9 @@ Note: the SERVICE_ACCOUNT_JSON environment variable is necessary for local devel
 /auth
 - POST: authenticate with a microsoft access token (doens't create a new user)
 
+/connection-test-token
+- GET: returns a connection test token
+
 ## /v1/private (requires auth token)
 /
 - GET: displays a private welcome message
@@ -183,6 +186,12 @@ Ran into issues due to image being built on my Apple Silicon Mac (arm64), causin
     ```
 
 If you don't have an Artifact Registry repo yet you can create one [here](https://console.cloud.google.com/artifacts).
+
+For container registry:
+
+    ```
+    docker buildx build --platform linux/amd64 -t gcr.io/livekit-demo/peachone/peachone:latest . --push
+    ```
 
 ## Run Docker Image Locally
 

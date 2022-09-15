@@ -9,6 +9,7 @@ import (
 	"peachone/queries"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofrs/uuid"
 	"github.com/microsoftgraph/msgraph-sdk-go/me"
 )
 
@@ -318,4 +319,31 @@ func Auth(c *fiber.Ctx) error {
 	}
 	return c.JSON(response)
 
+}
+
+// --------------------------------------------------------------------------------
+// GetConnectionTestToken
+// --------------------------------------------------------------------------------
+type GetConnectionTokenResponse struct {
+	Success   bool   `json:"success"`
+	RoomToken string `json:"roomToken"`
+}
+
+func GetConnectionTestToken(c *fiber.Ctx) error {
+	// get room token
+	teamId := "public-connection-test"
+	roomId := "common"
+	userId := uuid.Must(uuid.NewV4()).String()
+	token, err := createLiveKitJoinToken(teamId, roomId, userId)
+	if err != nil {
+		fmt.Println("error creating livekit token:", err)
+		return fiber.NewError(fiber.StatusInternalServerError, "error creating token")
+	}
+
+	// return response
+	response := &GetConnectionTokenResponse{
+		Success:   true,
+		RoomToken: token,
+	}
+	return c.JSON(response)
 }
