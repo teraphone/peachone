@@ -46,8 +46,8 @@ type ResolveRequest struct {
 }
 
 type ResolveResponse struct {
-	Success              bool                         `json:"success"`
-	ResolvedSubscription saasapi.ResolvedSubscription `json:"resolvedSubscription"`
+	Success        bool   `json:"success"`
+	SubscriptionId string `json:"subscriptionId"`
 }
 
 func Resolve(c *fiber.Ctx) error {
@@ -81,8 +81,8 @@ func Resolve(c *fiber.Ctx) error {
 
 	// return response
 	response := &ResolveResponse{
-		Success:              true,
-		ResolvedSubscription: resp.ResolvedSubscription,
+		Success:        true,
+		SubscriptionId: *resp.ResolvedSubscription.ID,
 	}
 	return c.JSON(response)
 }
