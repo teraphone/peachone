@@ -359,3 +359,112 @@ func SendSubscriptionDowngradeAlert(ctx context.Context, newSub *models.Subscrip
 
 	return resp, id, nil
 }
+
+func SendNewSubscriptionAlert(ctx context.Context, newSub *models.Subscription) (mes string, id string, err error) {
+	// email template
+	htmlNewSubscriptionAlertTemplate := `
+<html>
+	<body>
+		<p>New Subscription Alert</p>
+		<p>New Subscription:</p>
+		<p>{{.NewSubJSON}}</p>
+	</body>
+</html>
+`
+	type TemplateVars struct {
+		NewSubJSON string
+	}
+
+	newSubJSON, err := json.MarshalIndent(*newSub, "", "  ")
+	if err != nil {
+		return "", "", err
+	}
+
+	templateVars := &TemplateVars{
+		NewSubJSON: string(newSubJSON),
+	}
+
+	// create email message
+	mg := CreateMailgunClient()
+	message := mg.NewMessage("alerts@teraphone.app", "New Subscription", "", "help@teraphone.app")
+	parsedHtmlTemplate, err := template.New("body").Parse(htmlNewSubscriptionAlertTemplate)
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	var htmlBuffer bytes.Buffer
+	if err := parsedHtmlTemplate.Execute(&htmlBuffer, templateVars); err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	message.SetHtml(htmlBuffer.String())
+
+	// send message with 10 second timeout
+	log.Printf("Sending alert to help@teraphone.app")
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	resp, id, err := mg.Send(ctxWithTimeout, message)
+	if err != nil {
+		fmt.Println(err.Error())
+		return resp, id, err
+	}
+	log.Printf("ID: %s Resp: %s", id, resp)
+
+	return resp, id, nil
+}
+
+func SendNewSignUpAlert(ctx context.Context, newUser *models.TenantUser) (mes string, id string, err error) {
+	// email template
+	htmlNewSignupAlertTemplate := `
+<html>
+	<body>
+		<p>New Sign Up Alert</p>
+		<p>Oid: {{.Oid}}</p>
+		<p>Name: {{.Name}}</p>
+		<p>Email: {{.Email}}</p>
+		<p>Tid: {{.Tid}}</p>
+	</body>
+</html>
+`
+	type TemplateVars struct {
+		Oid   string
+		Name  string
+		Email string
+		Tid   string
+	}
+
+	templateVars := &TemplateVars{
+		Oid:   newUser.Oid,
+		Name:  newUser.Name,
+		Email: newUser.Email,
+		Tid:   newUser.Tid,
+	}
+
+	// create email message
+	mg := CreateMailgunClient()
+	message := mg.NewMessage("alerts@teraphone.app", "New Sign Up", "", "help@teraphone.app")
+	parsedHtmlTemplate, err := template.New("body").Parse(htmlNewSignupAlertTemplate)
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	var htmlBuffer bytes.Buffer
+	if err := parsedHtmlTemplate.Execute(&htmlBuffer, templateVars); err != nil {
+		fmt.Println(err.Error())
+		return "", "", err
+	}
+	message.SetHtml(htmlBuffer.String())
+
+	// send message with 10 second timeout
+	log.Printf("Sending alert to help@teraphone.app")
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	resp, id, err := mg.Send(ctxWithTimeout, message)
+	if err != nil {
+		fmt.Println(err.Error())
+		return resp, id, err
+	}
+	log.Printf("ID: %s Resp: %s", id, resp)
+
+	return resp, id, nil
+}

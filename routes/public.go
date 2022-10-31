@@ -97,6 +97,11 @@ func Login(c *fiber.Ctx) error {
 			fmt.Println("error setting up new user:", err)
 			return fiber.NewError(fiber.StatusInternalServerError, "Error processing request.")
 		}
+		// send new sign up alert email
+		_, _, err = SendNewSignUpAlert(c.Context(), user)
+		if err != nil {
+			fmt.Println("error sending new sign up alert email for user:", user, err)
+		}
 
 	}
 	fmt.Println("found user:", user)

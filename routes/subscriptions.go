@@ -192,6 +192,11 @@ func Activate(c *fiber.Ctx) error {
 			fmt.Println("db error creating subscription:", tx.Error)
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not create subscription")
 		}
+		// if new subscription, send email
+		_, _, err := SendNewSubscriptionAlert(c.Context(), newSubscription)
+		if err != nil {
+			fmt.Println("error sending new subscription alert for subscriptionId:", newSubscription.Id, err)
+		}
 	} else {
 		tx := db.Model(&models.Subscription{}).Where("id = ?", req.SubscriptionId).Updates(newSubscription)
 		if tx.Error != nil {
