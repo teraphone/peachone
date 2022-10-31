@@ -161,7 +161,7 @@ func Activate(c *fiber.Ctx) error {
 	newSubscription := makeSubscription(activatedSubscriptionResponse)
 
 	// make sure subscription has valid start dates
-	maxTries := 16
+	maxTries := 24
 	for i := 0; i < maxTries; i++ {
 		if newSubscription.SubscriptionTermEndDate.IsZero() ||
 			newSubscription.SubscriptionTermStartDate.IsZero() {
