@@ -298,20 +298,21 @@ func ReadDate(d *time.Time) time.Time {
 	return *d
 }
 
-func SendSubscriptionDowngradeAlert(ctx context.Context, newSub *models.Subscription, oldSub *models.Subscription) (mes string, id string, err error) {
+func SendSubscriptionActionAlert(ctx context.Context, action string, newSub *models.Subscription, oldSub *models.Subscription) (mes string, id string, err error) {
 	// email template
-	htmlSubscriptionDowngradeAlertTemplate := `
+	htmlSubscriptionActionAlertTemplate := `
 <html>
 	<body>
-		<p>Subscription Downgrade Alert</p>
+		<p>Subscription {{.Action}} Alert</p>
 		<p>Old Subscription:</p>
-		<p>{{.OldSubJSON}}</p>
+		<p><pre>{{.OldSubJSON}}</pre></p>
 		<p>New Subscription:</p>
-		<p>{{.NewSubJSON}}</p>
+		<p><pre>{{.NewSubJSON}}</pre></p>
 	</body>
 </html>
 `
 	type TemplateVars struct {
+		Action     string
 		OldSubJSON string
 		NewSubJSON string
 	}
@@ -327,14 +328,16 @@ func SendSubscriptionDowngradeAlert(ctx context.Context, newSub *models.Subscrip
 	}
 
 	templateVars := &TemplateVars{
+		Action:     action,
 		OldSubJSON: string(oldSubJSON),
 		NewSubJSON: string(newSubJSON),
 	}
 
 	// create email message
 	mg := CreateMailgunClient()
-	message := mg.NewMessage("alerts@teraphone.app", "Subscription Downgrade", "", "help@teraphone.app")
-	parsedHtmlTemplate, err := template.New("body").Parse(htmlSubscriptionDowngradeAlertTemplate)
+	subject := fmt.Sprintf("Subscription %s", action)
+	message := mg.NewMessage("alerts@teraphone.app", subject, "", "help@teraphone.app")
+	parsedHtmlTemplate, err := template.New("body").Parse(htmlSubscriptionActionAlertTemplate)
 	if err != nil {
 		fmt.Println(err.Error())
 		return "", "", err
@@ -367,7 +370,7 @@ func SendNewSubscriptionAlert(ctx context.Context, newSub *models.Subscription) 
 	<body>
 		<p>New Subscription Alert</p>
 		<p>New Subscription:</p>
-		<p>{{.NewSubJSON}}</p>
+		<p><pre>{{.NewSubJSON}}</pre></p>
 	</body>
 </html>
 `

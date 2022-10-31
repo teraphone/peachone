@@ -343,19 +343,17 @@ func GenericAction(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not create subscription")
 		}
 	} else {
-		// check if new sub has lower quantity. if so, send email.
-		if newSubscription.Quantity < currentSubscription.Quantity {
-			// send email
-			_, _, err := SendSubscriptionDowngradeAlert(c.Context(), newSubscription, currentSubscription)
-			if err != nil {
-				fmt.Println("error sending subscription downgrade alert for subscriptionId:", newSubscription.Id, err)
-			}
-		}
 		tx := db.Model(&models.Subscription{}).Where("id = ?", newSubscription.Id).Updates(newSubscription)
 		if tx.Error != nil {
 			fmt.Println("db error updating subscription:", tx.Error)
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not update subscription")
 		}
+	}
+
+	// send email
+	_, _, err = SendSubscriptionActionAlert(c.Context(), string(action), newSubscription, currentSubscription)
+	if err != nil {
+		fmt.Println("error sending subscription action alert for subscriptionId:", newSubscription.Id, err)
 	}
 
 	// return response
