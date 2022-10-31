@@ -5,6 +5,7 @@ import (
 	"peachone/database"
 	"peachone/models"
 	"peachone/saasapi"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -33,8 +34,8 @@ func makeSubscription(resp saasapi.FulfillmentOperationsClientGetSubscriptionRes
 		SessionId:                 ReadString(resp.Subscription.SessionID),
 		SessionMode:               models.SessionModeEnum(*resp.Subscription.SessionMode),
 		StoreFront:                ReadString(resp.Subscription.StoreFront),
-		SubscriptionTermStartDate: *resp.Subscription.Term.StartDate,
-		SubscriptionTermEndDate:   *resp.Subscription.Term.EndDate,
+		SubscriptionTermStartDate: ReadDate(resp.Subscription.Term.StartDate),
+		SubscriptionTermEndDate:   ReadDate(resp.Subscription.Term.EndDate),
 	}
 }
 
@@ -156,11 +157,32 @@ func Activate(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve activated subscription")
 	}
 
-	// get database connection
-	db := database.DB.DB
-
 	// populate new subscription
 	newSubscription := makeSubscription(activatedSubscriptionResponse)
+
+	// make sure subscription has valid start dates
+	maxTries := 16
+	for i := 0; i < maxTries; i++ {
+		if newSubscription.SubscriptionTermEndDate.IsZero() ||
+			newSubscription.SubscriptionTermStartDate.IsZero() {
+			time.Sleep(5 * time.Second)
+			activatedSubscriptionResponse, err = client.GetSubscription(
+				c.Context(),
+				req.SubscriptionId,
+				&saasapi.FulfillmentOperationsClientGetSubscriptionOptions{},
+			)
+			if err != nil {
+				fmt.Println("error getting activated subscription:", err)
+				return fiber.NewError(fiber.StatusInternalServerError, "could not retrieve activated subscription")
+			}
+			newSubscription = makeSubscription(activatedSubscriptionResponse)
+		} else {
+			break
+		}
+	}
+
+	// get database connection
+	db := database.DB.DB
 
 	// check if subscription in db... if no, create it; if so, update it
 	query := db.Where("id = ?", req.SubscriptionId).Find(&models.Subscription{})

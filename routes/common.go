@@ -291,6 +291,13 @@ func ReadString(s *string) string {
 	return *s
 }
 
+func ReadDate(d *time.Time) time.Time {
+	if d == nil {
+		return time.Time{}
+	}
+	return *d
+}
+
 func SendSubscriptionDowngradeAlert(ctx context.Context, newSub *models.Subscription, oldSub *models.Subscription) (mes string, id string, err error) {
 	// email template
 	htmlSubscriptionDowngradeAlertTemplate := `
