@@ -161,7 +161,7 @@ func Activate(c *fiber.Ctx) error {
 	newSubscription := makeSubscription(activatedSubscriptionResponse)
 
 	// make sure subscription has valid start dates
-	maxTries := 16
+	maxTries := 24
 	for i := 0; i < maxTries; i++ {
 		if newSubscription.SubscriptionTermEndDate.IsZero() ||
 			newSubscription.SubscriptionTermStartDate.IsZero() {
@@ -191,6 +191,11 @@ func Activate(c *fiber.Ctx) error {
 		if tx.Error != nil {
 			fmt.Println("db error creating subscription:", tx.Error)
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not create subscription")
+		}
+		// if new subscription, send email
+		_, _, err := SendNewSubscriptionAlert(c.Context(), newSubscription)
+		if err != nil {
+			fmt.Println("error sending new subscription alert for subscriptionId:", newSubscription.Id, err)
 		}
 	} else {
 		tx := db.Model(&models.Subscription{}).Where("id = ?", req.SubscriptionId).Updates(newSubscription)
@@ -338,19 +343,17 @@ func GenericAction(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not create subscription")
 		}
 	} else {
-		// check if new sub has lower quantity. if so, send email.
-		if newSubscription.Quantity < currentSubscription.Quantity {
-			// send email
-			_, _, err := SendSubscriptionDowngradeAlert(c.Context(), newSubscription, currentSubscription)
-			if err != nil {
-				fmt.Println("error sending subscription downgrade alert for subscriptionId:", newSubscription.Id, err)
-			}
-		}
 		tx := db.Model(&models.Subscription{}).Where("id = ?", newSubscription.Id).Updates(newSubscription)
 		if tx.Error != nil {
 			fmt.Println("db error updating subscription:", tx.Error)
 			return fiber.NewError(fiber.StatusInternalServerError, "db could not update subscription")
 		}
+	}
+
+	// send email
+	_, _, err = SendSubscriptionActionAlert(c.Context(), string(action), newSubscription, currentSubscription)
+	if err != nil {
+		fmt.Println("error sending subscription action alert for subscriptionId:", newSubscription.Id, err)
 	}
 
 	// return response
