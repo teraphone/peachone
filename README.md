@@ -104,6 +104,12 @@ Or they can be defined inline:
 DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="ms-peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="8080" SIGNING_KEY="secret" LIVEKIT_KEY=<secret-key> LIVEKIT_SECRET=<secret-value> LIVEKIT_HOST="sfu-demo.teraphone.app" SERVICE_ACCOUNT_JSON="livekit-demo-firebase-adminsdk-7dp4y-85e675b567.json" MG_DOMAIN="mg.teraphone.app" MG_API_KEY=<api-key> MG_BYPASS="true" MSAL_CLIENT_SECRET=<secret-value> ./peachone
 ```
 
+The above command with secrets is available in Google Cloud Secret Manager:
+
+```sh
+gcloud secrets versions access "latest" --secret="peachone-start-locally-with-secrets"
+```
+
 Note: the SERVICE_ACCOUNT_JSON environment variable is necessary for local development only. If the service is running in gcloud then the variable should be empty. SERVICE_ACCOUNT_JSON should be a path to the service account key for the Firebase Admin SDK available [here](https://console.firebase.google.com/project/livekit-demo/settings/serviceaccounts/adminsdk). Warning: this key should be kept secret.
 
 # REST API Endpoints
