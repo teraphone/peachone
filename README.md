@@ -6,6 +6,10 @@
 - Helm
   - `helm repo add bitnami https://charts.bitnami.com/bitnami`
 
+## Optional
+
+- [VS Code Cloud Code extension](https://marketplace.visualstudio.com/items?itemName=GoogleCloudTools.cloudcode)
+
 # Kubernetes PostgreSQL
 
 ArtifactHub link [here](https://artifacthub.io/packages/helm/bitnami/postgresql).
