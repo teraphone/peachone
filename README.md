@@ -60,6 +60,12 @@ ArtifactHub link [here](https://artifacthub.io/packages/helm/bitnami/postgresql)
         kubectl port-forward --namespace default svc/postgresql 5432:5432 &
         PGPASSWORD="$POSTGRES_PASSWORD" psql --host 127.0.0.1 -U postgres -d peachone-dev -p 5432
     ```
+    
+Allow peachone to connect to Postgres from outside the cluster:
+
+```sh
+kubectl port-forward --namespace default svc/postgresql 5432:5432
+```
 
 # GORM connection
 
