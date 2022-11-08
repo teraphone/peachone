@@ -3,6 +3,7 @@
 - Docker Desktop
 - Minikube
   - `minikube start`
+- Helm
 
 # Kubernetes PostgreSQL
 
