@@ -9,6 +9,7 @@
 ## Optional
 
 - [VS Code Cloud Code extension](https://marketplace.visualstudio.com/items?itemName=GoogleCloudTools.cloudcode)
+- gcloud CLI: `gcloud config set project livekit-demo`
 
 # Kubernetes PostgreSQL
 
@@ -104,7 +105,13 @@ Or they can be defined inline:
 DB_HOST="127.0.0.1" DB_USER="postgres" DB_PASSWORD="pw" DB_NAME="ms-peachone-dev" DB_PORT="5432" DB_AUTOMIGRATE="false" PORT="8080" SIGNING_KEY="secret" LIVEKIT_KEY=<secret-key> LIVEKIT_SECRET=<secret-value> LIVEKIT_HOST="sfu-demo.teraphone.app" SERVICE_ACCOUNT_JSON="livekit-demo-firebase-adminsdk-7dp4y-85e675b567.json" MG_DOMAIN="mg.teraphone.app" MG_API_KEY=<api-key> MG_BYPASS="true" MSAL_CLIENT_SECRET=<secret-value> ./peachone
 ```
 
-The above command with secrets is available in Google Cloud Secret Manager:
+Get the service account JSON from `gcloud iam service-accounts keys list` or from Google Secret Manager:
+
+```sh
+gcloud secrets versions access "latest" --secret="peachone-firebase-service-account-json" > livekit-demo-firebase-adminsdk-7dp4y-e08e00b02b.json
+```
+
+Run the command stored in the following secret to start peachone with env variables:
 
 ```sh
 gcloud secrets versions access "latest" --secret="peachone-start-locally-with-secrets"
