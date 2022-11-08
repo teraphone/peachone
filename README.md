@@ -4,6 +4,7 @@
 - Minikube
   - `minikube start`
 - Helm
+  - `helm repo add bitnami https://charts.bitnami.com/bitnami`
 
 # Kubernetes PostgreSQL
 
