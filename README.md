@@ -1,4 +1,11 @@
+# Prerequisites
+
+- Docker Desktop
+- Minikube
+  - `minikube start`
+
 # Kubernetes PostgreSQL
+
 ArtifactHub link [here](https://artifacthub.io/packages/helm/bitnami/postgresql).
 
 1. Create secret with:
